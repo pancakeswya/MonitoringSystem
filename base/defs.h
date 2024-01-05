@@ -1,0 +1,9 @@
+#ifndef MONITORINGSYSTEM_SRC_AGENTS_DEFS_H_
+#define MONITORINGSYSTEM_SRC_AGENTS_DEFS_H_
+
+#define BUFFER_SIZE 1000
+
+#define unused(x) ((void)(x))
+
+#endif // MONITORINGSYSTEM_SRC_AGENTS_DEFS_H_
+
