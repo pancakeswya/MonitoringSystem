@@ -1,6 +1,6 @@
 #include "agents/memory.h"
-#include "base/defs.h"
-#include "base/util.h"
+#include "agents/defs.h"
+#include "agents/util.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -9,7 +9,6 @@
 #include <string.h>
 
 #include <sys/statvfs.h>
-#include <sys/stat.h>
 
 enum DiskStats {
   kDiskId = 0,
@@ -114,7 +113,9 @@ size_t HardOps() {
 }
 
 double HardThroughput() {
-  struct stat fi;
-  stat("/", &fi);
-  return HardOps() * fi.st_blksize;
+  struct statvfs buffer;
+  int ret = statvfs("/", &buffer);
+  assert(ret != -1);
+  unused(ret);
+  return HardOps() * buffer.f_bsize;
 }

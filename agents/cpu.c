@@ -1,12 +1,20 @@
 #include "agents/cpu.h"
-#include "base/defs.h"
-#include "base/util.h"
+#include "agents/defs.h"
+#include "agents/util.h"
 
 #include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+enum CPUParameters {
+  kUser = 0,
+  kNice = 1,
+  kSys = 2,
+  kIdle = 3,
+  kStates = 4
+};
 
 static void ReadStat(unsigned long long int stats[kStates]) {
   FILE* stat_file = fopen( "/proc/stat", "r");
@@ -31,13 +39,13 @@ static void ReadStat(unsigned long long int stats[kStates]) {
   free(line);
 }
 
-double CpuLoad(unsigned int delay) {
+double CpuLoad() {
   unsigned long long int prev_stats[kStates],
                          curr_stats[kStates],
                          result_stats[kStates];
 
   ReadStat(prev_stats);
-  usleep(delay);
+  usleep(DELAY_MCS);
   ReadStat(curr_stats);
 
   for(int i = 0; i < kStates; ++i) {

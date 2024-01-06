@@ -2,6 +2,7 @@
 #define MONITORINGSYSTEM_SRC_AGENTS_DEFS_H_
 
 #define BUFFER_SIZE 1000
+#define DELAY_MCS 990000
 
 #define unused(x) ((void)(x))
 

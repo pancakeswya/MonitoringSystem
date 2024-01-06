@@ -1,5 +1,5 @@
-#include "base/util.h"
-#include "base/defs.h"
+#include "agents/util.h"
+#include "agents/defs.h"
 
 #include <assert.h>
 #include <stdlib.h>
