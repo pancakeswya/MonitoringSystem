@@ -4,5 +4,5 @@
 
 int main() {
   printf("%lf %ld\n", CpuLoad(990000), CpuProcesses());
-  printf("%lf %lf\n", RamTotal(), Ram());
+  printf("%lf %lf %lu %lf %lf\n", RamTotal(), Ram(), HardOps(), HardVolume(), HardThroughput());
 }

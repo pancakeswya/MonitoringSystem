@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static char* FindMetricLine(char path[const restrict], char target[const restrict], const size_t target_len) {
+static char* FindMetricLine(const char* restrict path, const char* restrict target, const size_t target_len) {
   FILE* file = fopen(path, "r");
   assert(mem_file != NULL);
 
@@ -26,7 +26,7 @@ static char* FindMetricLine(char path[const restrict], char target[const restric
   return line;
 }
 
-double ParseMetricSingleD(char path[const restrict], char target[const restrict]) {
+double ParseMetricSingleD(const char* restrict path, const char* restrict target) {
   const size_t target_len = strlen(target);
   char* line = FindMetricLine(path, target, target_len);
   double metric = strtod(line + target_len, NULL);
@@ -34,7 +34,7 @@ double ParseMetricSingleD(char path[const restrict], char target[const restrict]
   return metric;
 }
 
-size_t ParseMetricSingleU(char path[const restrict], char target[const restrict]) {
+size_t ParseMetricSingleU(const char* restrict path, const char* restrict target) {
   const size_t target_len = strlen(target);
   char* line = FindMetricLine(path, target, target_len);
   size_t metric = strtoul(line + target_len, NULL, 10);
