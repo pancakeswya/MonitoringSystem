@@ -1,5 +1,5 @@
-#include "agents/network.h"
-#include "agents/defs.h"
+#include "agents/core/network.h"
+#include "agents/core/defs.h"
 
 #include <assert.h>
 #include <ctype.h>

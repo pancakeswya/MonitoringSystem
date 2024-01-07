@@ -1,6 +1,6 @@
-#include "agents/memory.h"
-#include "agents/defs.h"
-#include "agents/util.h"
+#include "agents/core/memory.h"
+#include "agents/core/defs.h"
+#include "agents/core/util.h"
 
 #include <assert.h>
 #include <ctype.h>

@@ -1,17 +1,27 @@
 cmake_minimum_required(VERSION 3.28)
-project(untitled25 LANGUAGES C)
+project(MonitoringSystem LANGUAGES C CXX)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
-include_directories(".")
+set(SRC_DIR src)
 
-add_executable(untitled25 main.c
-        agents/util.c
-        agents/util.h
-        agents/cpu.c
-        agents/cpu.h
-        agents/memory.c
-        agents/memory.h
-        agents/network.h
-        agents/network.c
-)
+include_directories("${SRC_DIR}")
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+add_library(AgentsHandler STATIC
+        ${SRC_DIR}/agents/handler.cc
+        ${SRC_DIR}/agents/handler.h)
+
+add_library(AgentsBuilder STATIC
+        ${SRC_DIR}/agents/builder.cc
+        ${SRC_DIR}/agents/builder.h)
+
+add_executable(MonitoringSystem
+        ${SRC_DIR}/main.cc)
+
+target_link_libraries(MonitoringSystem AgentsHandler AgentsBuilder)
+
+add_compile_definitions("_CORELIB_CPU_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_CPU_PATH}")
+add_compile_definitions("_CORELIB_MEMORY_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_MEMORY_PATH}")
+add_compile_definitions("_CORELIB_NETWORK_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_NETWORK_PATH}")

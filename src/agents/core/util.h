@@ -1,5 +1,5 @@
-#ifndef MONITORINGSYSTEM_SRC_AGENTS_UTIL_H_
-#define MONITORINGSYSTEM_SRC_AGENTS_UTIL_H_
+#ifndef MONITORINGSYSTEM_SRC_AGENTS_CORE_UTIL_H_
+#define MONITORINGSYSTEM_SRC_AGENTS_CORE_UTIL_H_
 
 #include <sys/types.h>
 
@@ -20,4 +20,4 @@ static inline double ConvertToByteUnit(double num, int to, int from) {
 double ParseMetricSingleD(const char* restrict path, const char* restrict target);
 size_t ParseMetricSingleU(const char* restrict path, const char* restrict target);
 
-#endif // MONITORINGSYSTEM_SRC_AGENTS_UTIL_H_
+#endif // MONITORINGSYSTEM_SRC_AGENTS_CORE_UTIL_H_

@@ -1,5 +1,5 @@
-#include "agents/util.h"
-#include "agents/defs.h"
+#include "agents/core/util.h"
+#include "agents/core/defs.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 
 static char* FindMetricLine(const char* restrict path, const char* restrict target, const size_t target_len) {
   FILE* file = fopen(path, "r");
-  assert(mem_file != NULL);
+  assert(file != NULL);
 
   char* line = (char*)malloc(BUFFER_SIZE * sizeof(char));
   assert(line != NULL);

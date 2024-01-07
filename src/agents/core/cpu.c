@@ -1,6 +1,6 @@
-#include "agents/cpu.h"
-#include "agents/defs.h"
-#include "agents/util.h"
+#include "agents/core/cpu.h"
+#include "agents/core/defs.h"
+#include "agents/core/util.h"
 
 #include <assert.h>
 #include <unistd.h>
