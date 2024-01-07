@@ -23,7 +23,7 @@ CPU Builder::BuildCpuAgent() noexcept {
 
 Memory Builder::BuildMemoryAgent() noexcept {
   assert(handler_->handle_memory_);
-  return Memory{
+  return {
       .ram_total = reinterpret_cast<RamTotalCallback>(
           dlsym(handler_->handle_memory_, "RamTotal")
       ),

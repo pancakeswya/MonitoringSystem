@@ -1,5 +1,6 @@
+# please use makefile for building or define variables that are in add_compile_definitions
 cmake_minimum_required(VERSION 3.28)
-project(MonitoringSystem LANGUAGES C CXX)
+project(MonitoringSystem)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -8,6 +9,8 @@ set(SRC_DIR src)
 include_directories("${SRC_DIR}")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+add_subdirectory(src/agents/core)
 
 add_library(AgentsHandler STATIC
         ${SRC_DIR}/agents/handler.cc

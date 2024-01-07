@@ -17,5 +17,4 @@ int main() {
   handler.ActivateNetworkAgent();
   auto network_agent = builder.BuildNetworkAgent();
   std::cout << network_agent.url_available("ya.ru") << ' ' << network_agent.inet_throughput() << std::endl;
-
 }
