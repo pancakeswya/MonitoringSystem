@@ -1,0 +1,2 @@
+/usr/bin/ar qc libAGENT_UTIL.a CMakeFiles/AGENT_UTIL.dir/util.c.o
+/usr/bin/ranlib libAGENT_UTIL.a

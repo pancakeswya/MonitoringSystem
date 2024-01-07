@@ -1,0 +1,3 @@
+file(REMOVE_RECURSE
+  "libAGENT_UTIL.a"
+)
