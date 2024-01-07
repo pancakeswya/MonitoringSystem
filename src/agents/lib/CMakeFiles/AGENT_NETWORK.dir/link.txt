@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -shared -Wl,-soname,libAGENT_NETWORK.so -o libAGENT_NETWORK.so CMakeFiles/AGENT_NETWORK.dir/network.c.o 

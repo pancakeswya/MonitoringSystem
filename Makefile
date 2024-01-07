@@ -1,3 +1,4 @@
+OS     := $(shell uname)
 NAME   := MonitoringSystem
 
 BUILDER := cmake
@@ -8,9 +9,19 @@ BUILD_DIR := build
 AGENTSCORELIB_DIR := $(SRC_DIR)/agents/lib
 AGENTSCORESRC_DIR := $(SRC_DIR)/agents/core
 
+ifeq ($(OS), Linux)
 AGENTSCORELIB_CPU_PATH := $(AGENTSCORELIB_DIR)/libAgent_CPU.so
 AGENTSCORELIB_MEMORY_PATH := $(AGENTSCORELIB_DIR)/libAgent_MEMORY.so
 AGENTSCORELIB_NETWORK_PATH := $(AGENTSCORELIB_DIR)/libAgent_NETWORK.so
+OPEN         := xdg-open
+RUN          := ./$(BUILD_DIR)/$(APP)
+else ifeq ($(OS), Darwin)
+AGENTSCORELIB_CPU_PATH := $(AGENTSCORELIB_DIR)/libAgent_CPU.dylib
+AGENTSCORELIB_MEMORY_PATH := $(AGENTSCORELIB_DIR)/libAgent_MEMORY.dylib
+AGENTSCORELIB_NETWORK_PATH := $(AGENTSCORELIB_DIR)/libAgent_NETWORK.dylib
+OPEN         := open
+RUN          := $(OPEN) $(BUILD_DIR)/$(APP)
+endif
 
 RM := rm -rf
 

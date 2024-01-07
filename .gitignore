@@ -1,6 +1,6 @@
 # builds and etc
-build
-cmake-build-release
+build*
+cmake-build-*
 .idea
 # Prerequisites
 *.d

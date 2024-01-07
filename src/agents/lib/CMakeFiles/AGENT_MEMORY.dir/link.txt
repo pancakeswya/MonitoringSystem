@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -shared -Wl,-soname,libAGENT_MEMORY.so -o libAGENT_MEMORY.so CMakeFiles/AGENT_MEMORY.dir/memory.c.o  libAGENT_UTIL.a 
