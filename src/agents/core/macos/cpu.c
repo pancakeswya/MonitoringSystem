@@ -1,10 +1,9 @@
 #include "agents/core/cpu.h"
+#include "agents/core/base/defs.h"
 
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
-
-#include "agents/core/defs.h"
 
 enum CPUParameters {
   kCpUser = 0,

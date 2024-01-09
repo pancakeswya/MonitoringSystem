@@ -1,4 +1,5 @@
 #include "agents/core/network.h"
+#include "agents/core/base/defs.h"
 
 #include <assert.h>
 #include <net/if.h>
@@ -7,8 +8,6 @@
 #include <string.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
-
-#include "agents/core/defs.h"
 
 int UrlAvailable(const char *url) {
   const char util[] = "curl --head --silent --fail --output /dev/null ";

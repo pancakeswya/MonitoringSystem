@@ -1,4 +1,6 @@
 #include "agents/core/memory.h"
+#include "agents/core/base/defs.h"
+#include "agents/core/base/util.h"
 
 #include <assert.h>
 #include <libproc.h>
@@ -7,9 +9,6 @@
 #include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
-
-#include "agents/core/defs.h"
-#include "agents/core/util.h"
 
 static vm_statistics_data_t GetRamVmStat() {
   static int mib[] = {CTL_HW, HW_MEMSIZE};

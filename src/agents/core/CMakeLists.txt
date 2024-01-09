@@ -13,8 +13,8 @@ else()
 endif()
 
 add_library(AGENT_UTIL STATIC
-        util.c
-        util.h)
+        base/util.c
+        base/util.h)
 
 add_library(AGENT_CPU SHARED
         ${CORE_SRC}/cpu.c
