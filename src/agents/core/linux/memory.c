@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/statvfs.h>
 
@@ -28,12 +29,14 @@ enum DiskStats {
   kStatsSize = 14
 };
 
-double RamTotal() {
+double RamTotal(unsigned int delay) {
+  usleep(delay);
   double ram_total = ParseMetricSingleD("/proc/meminfo", "MemTotal:");
   return ConvertToByteUnit(ram_total, kMegaBytes, kKiloBytes);
 }
 
-double Ram() {
+double Ram(unsigned int delay) {
+  usleep(delay);
   FILE* mem_file = fopen("/proc/meminfo", "r");
   assert(mem_file != NULL);
   char* line = (char*)malloc(BUFFER_SIZE);
@@ -71,7 +74,8 @@ double Ram() {
   return used / total * 100.0;
 }
 
-double HardVolume() {
+double HardVolume(unsigned int delay) {
+  usleep(delay);
   struct statvfs buffer;
   int ret = statvfs("/", &buffer);
   assert(ret != -1);
@@ -81,7 +85,8 @@ double HardVolume() {
   return (available / total) * 100.0;
 }
 
-size_t HardOps() {
+size_t HardOps(unsigned int delay) {
+  usleep(delay);
   FILE* stat_file = fopen("/proc/diskstats", "r");
   assert(stat_file != NULL);
   char* line = (char*)malloc(BUFFER_SIZE);
@@ -112,10 +117,10 @@ size_t HardOps() {
   return (size_t)(iops / iops_time_s);
 }
 
-double HardThroughput() {
+double HardThroughput(unsigned int delay) {
   struct statvfs buffer;
   int ret = statvfs("/", &buffer);
   assert(ret != -1);
   unused(ret);
-  return HardOps() * buffer.f_bsize;
+  return HardOps(delay) * buffer.f_bsize;
 }

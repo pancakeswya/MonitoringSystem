@@ -1,0 +1,46 @@
+name: cpu
+type: cpu_agent
+range: < 90
+timeout: 990000
+
+name: processes
+type: cpu_agent
+range: < 50000
+timeout: 990000
+
+name: ram_total
+type: memory_agent
+range: >= 10, < 10000
+timeout: 990000
+
+name: ram
+type: memory_agent
+range: >= 0, <= 90
+timeout: 990000
+
+name: hard_volume
+type: memory_agent
+range: >= 0, <= 80
+timeout: 990000
+
+name: hard_ops
+type: memory_agent
+range: < 1000
+timeout: 990000
+
+name: hard_throughput
+type: memory_agent
+range: > 2500
+timeout: 990000
+
+name: url
+type: network_agent:ya.ru
+range: >= 0, <= 1
+timeout: 990000
+
+name: inet_throughput
+type: network_agent
+range: < 2000
+timeout: 990000
+
+

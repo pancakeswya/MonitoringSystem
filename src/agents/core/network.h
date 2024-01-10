@@ -4,8 +4,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  int UrlAvailable(const char* url);
-  double InetThroughput();
+  extern int UrlAvailable(const char* url, unsigned int delay);
+  extern double InetThroughput(unsigned int delay);
 #ifdef __cplusplus
 }
 #endif

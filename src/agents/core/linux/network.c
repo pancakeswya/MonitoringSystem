@@ -28,7 +28,8 @@ enum NetStat {
   kStatsSize
 };
 
-int UrlAvailable(const char* url) {
+int UrlAvailable(const char* url, unsigned int delay) {
+  usleep(delay);
   const char util[] = "wget --spider -q ";
   size_t util_len = strlen(util), url_len = strlen(url);
   char* command = (char*)malloc(util_len + url_len + 1);
@@ -71,9 +72,9 @@ static size_t GetTotalBytes() {
   return stats[kRxBytes] + stats[kTxBytes];
 }
 
-double InetThroughput() {
+double InetThroughput(unsigned int delay) {
   size_t prev_bytes = GetTotalBytes();
-  usleep(DELAY_MCS);
+  usleep(delay);
   size_t curr_bytes = GetTotalBytes();
   return (double)(curr_bytes - prev_bytes);
 }

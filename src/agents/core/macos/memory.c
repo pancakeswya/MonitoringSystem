@@ -45,7 +45,8 @@ static size_t GetIOBytes() {
   return bytes;
 }
 
-double HardVolume() {
+double HardVolume(unsigned int delay) {
+  usleep(delay);
   struct statvfs buffer;
   int ret = statvfs("/", &buffer);
   assert(ret != -1);
@@ -55,29 +56,31 @@ double HardVolume() {
   return (available / total) * 100.0;
 }
 
-size_t HardOps() {
+size_t HardOps(unsigned int delay) {
   size_t prev_bytes = GetIOBytes();
-  usleep(DELAY_MCS);
+  usleep(delay);
   size_t curr_bytes = GetIOBytes();
   return curr_bytes - prev_bytes;
 }
 
-double HardThroughput() {
+double HardThroughput(unsigned int delay)
   struct statvfs buffer;
   int ret = statvfs("/", &buffer);
   assert(ret != -1);
   unused(ret);
-  return HardOps() * buffer.f_bsize;
+  return HardOps(delay) * buffer.f_bsize;
 }
 
-double RamTotal() {
+double RamTotal(unsigned int delay) {
+  usleep(delay);
   const vm_statistics_data_t vmstat = GetRamVmStat();
   const double total = vmstat.wire_count + vmstat.active_count +
                        vmstat.inactive_count + vmstat.free_count;
   return ConvertToByteUnit(total, kMegaBytes, kKiloBytes);
 }
 
-double Ram() {
+double Ram(unsigned int delay) {
+  usleep(delay);
   const vm_statistics_data_t vmstat = GetRamVmStat();
   const double total = vmstat.wire_count + vmstat.active_count +
                        vmstat.inactive_count + vmstat.free_count;

@@ -31,9 +31,9 @@ static host_cpu_load_info_data_t GetCpuPercentage() {
   return r_load;
 }
 
-double CpuLoad() {
+double CpuLoad(unsigned int delay) {
   host_cpu_load_info_data_t load1 = GetCpuPercentage();
-  usleep(DELAY_MCS);
+  usleep(delay);
   host_cpu_load_info_data_t load2 = GetCpuPercentage();
 
   size_t current_user = load1.cpu_ticks[kCpUser],
@@ -55,7 +55,8 @@ double CpuLoad() {
          (double)(diff_user + diff_system + diff_nice + diff_idle) * 100.0;
 }
 
-size_t CpuProcesses() {
+size_t CpuProcesses(unsigned int delay) {
+  usleep(delay);
   size_t length;
   static int names[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
   int res = sysctl(names, sizeof(names) / sizeof(names[0]) - 1, NULL, &length,

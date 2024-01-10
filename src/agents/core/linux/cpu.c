@@ -39,13 +39,13 @@ static void ReadStat(unsigned long long int stats[kStates]) {
   free(line);
 }
 
-double CpuLoad() {
+double CpuLoad(unsigned int delay) {
   unsigned long long int prev_stats[kStates],
                          curr_stats[kStates],
                          result_stats[kStates];
 
   ReadStat(prev_stats);
-  usleep(DELAY_MCS);
+  usleep(delay);
   ReadStat(curr_stats);
 
   for(int i = 0; i < kStates; ++i) {
@@ -57,6 +57,7 @@ double CpuLoad() {
        * 100.0;
 }
 
-size_t CpuProcesses() {
+size_t CpuProcesses(unsigned int delay) {
+  usleep(delay);
   return ParseMetricSingleU("/proc/stat", "processes");
 }

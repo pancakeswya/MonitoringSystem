@@ -12,28 +12,28 @@ else()
     message(FATAL_ERROR "OS not supported")
 endif()
 
-add_library(AGENT_UTIL STATIC
+add_library(agent_util STATIC
         base/util.c
         base/util.h)
 
-add_library(AGENT_CPU SHARED
+add_library(agent_cpu SHARED
         ${CORE_SRC}/cpu.c
         cpu.h)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    target_link_libraries(AGENT_CPU AGENT_UTIL)
+    target_link_libraries(agent_cpu agent_util)
 endif()
 
-add_library(AGENT_MEMORY SHARED
+add_library(agent_memory SHARED
         ${CORE_SRC}/memory.c
         memory.h)
 
-target_link_libraries(AGENT_MEMORY AGENT_UTIL)
+target_link_libraries(agent_memory agent_util)
 
-add_library(AGENT_NETWORK SHARED
+add_library(agent_network SHARED
         ${CORE_SRC}/network.c
         network.h)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(AGENT_NETWORK AGENT_UTIL)
+    target_link_libraries(agent_network agent_util)
 endif()

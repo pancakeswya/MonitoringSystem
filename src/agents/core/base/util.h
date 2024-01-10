@@ -17,7 +17,7 @@ static inline double ConvertToByteUnit(double num, int to, int from) {
   return num;
 }
 
-double ParseMetricSingleD(const char* restrict path, const char* restrict target);
-size_t ParseMetricSingleU(const char* restrict path, const char* restrict target);
+extern double ParseMetricSingleD(const char* restrict path, const char* restrict target);
+extern size_t ParseMetricSingleU(const char* restrict path, const char* restrict target);
 
 #endif // MONITORINGSYSTEM_SRC_AGENTS_CORE_UTIL_H_

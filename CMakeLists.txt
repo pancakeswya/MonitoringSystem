@@ -20,10 +20,20 @@ add_library(AgentsBuilder STATIC
         ${SRC_DIR}/agents/builder.cc
         ${SRC_DIR}/agents/builder.h)
 
+add_library(ConfigParser STATIC
+        ${SRC_DIR}/model/config_parser.cc
+        ${SRC_DIR}/model/config_parser.h)
+
+add_library(Model STATIC
+        ${SRC_DIR}/model/model.cc
+        ${SRC_DIR}/model/model.h)
+
+target_link_libraries(Model AgentsHandler AgentsBuilder ConfigParser)
+
 add_executable(MonitoringSystem
         ${SRC_DIR}/main.cc)
 
-target_link_libraries(MonitoringSystem AgentsHandler AgentsBuilder)
+target_link_libraries(MonitoringSystem Model)
 
 add_compile_definitions("_CORELIB_CPU_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_CPU_PATH}")
 add_compile_definitions("_CORELIB_MEMORY_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_MEMORY_PATH}")

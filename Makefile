@@ -1,7 +1,7 @@
 OS     := $(shell uname)
 NAME   := MonitoringSystem
 
-BUILDER := cmake
+CMAKE := cmake
 
 SRC_DIR   := src
 BUILD_DIR := build
@@ -25,19 +25,25 @@ endif
 
 RM := rm -rf
 
+MAKEFLAGS    += --no-print-directory
+
 all: build run
+
+agent_cpu agent_memory agent_network:
+	mkdir -p $(AGENTSCORELIB_DIR)
+	$(CMAKE) -H$(AGENTSCORESRC_DIR) -B$(AGENTSCORELIB_DIR) && $(CMAKE) --build $(AGENTSCORELIB_DIR) --target $@
 
 agentslib:
 	mkdir -p $(AGENTSCORELIB_DIR)
-	$(BUILDER) -H$(AGENTSCORESRC_DIR) -B$(AGENTSCORELIB_DIR) && make -C $(AGENTSCORELIB_DIR)
+	$(CMAKE) -H$(AGENTSCORESRC_DIR) -B$(AGENTSCORELIB_DIR) && $(MAKE) -C $(AGENTSCORELIB_DIR)
 
 build: agentslib
 	mkdir -p $(BUILD_DIR)
-	$(BUILDER) -B$(BUILD_DIR) \
+	$(CMAKE) -B$(BUILD_DIR) \
 		-DCORELIB_CPU_PATH=$(word 1, $(AGENTSLIB_PATH)) \
 		-DCORELIB_MEMORY_PATH=$(word 2, $(AGENTSLIB_PATH)) \
 		-DCORELIB_NETWORK_PATH=$(word 3, $(AGENTSLIB_PATH)) && \
-	make -C $(BUILD_DIR)
+	$(MAKE) -C $(BUILD_DIR)
 
 run:
 	./$(BUILD_DIR)/$(NAME)

@@ -20,21 +20,21 @@ using UrlAvailableCallback = typeof(&UrlAvailable);
 using InetThroughputCallback = typeof(&InetThroughput);
 
 struct CPU {
-  const CpuLoadCallback cpu_load;
-  const CpuProcessCallback cpu_process;
+  CpuLoadCallback cpu_load;
+  CpuProcessCallback cpu_process;
 };
 
 struct Memory {
-  const RamTotalCallback ram_total;
-  const RamCallback ram;
-  const HardVolumeCallback hard_volume;
-  const HardOpsCallback hard_ops;
-  const HardThroughputCallback hard_throughput;
+  RamTotalCallback ram_total;
+  RamCallback ram;
+  HardVolumeCallback hard_volume;
+  HardOpsCallback hard_ops;
+  HardThroughputCallback hard_throughput;
 };
 
 struct Network {
-  const UrlAvailableCallback url_available;
-  const InetThroughputCallback inet_throughput;
+  UrlAvailableCallback url_available;
+  InetThroughputCallback inet_throughput;
 };
 
 } // namespace monsys::agents

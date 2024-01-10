@@ -6,8 +6,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  double CpuLoad();
-  size_t CpuProcesses();
+  extern double CpuLoad(unsigned int delay);
+  extern size_t CpuProcesses(unsigned int delay);
 #ifdef __cplusplus
 }
 #endif

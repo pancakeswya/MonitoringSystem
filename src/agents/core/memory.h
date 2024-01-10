@@ -6,11 +6,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  double RamTotal();
-  double Ram();
-  double HardVolume();
-  size_t HardOps();
-  double HardThroughput();
+  extern double RamTotal(unsigned int delay);
+  extern double Ram(unsigned int delay);
+  extern double HardVolume(unsigned int delay);
+  extern size_t HardOps(unsigned int delay);
+  extern double HardThroughput(unsigned int delay);
 #ifdef __cplusplus
 }
 #endif
