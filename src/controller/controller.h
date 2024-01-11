@@ -35,6 +35,7 @@ class Controller {
  private:
   template<typename Callback>
   bool HandleAgent(Callback callback) noexcept;
+
   template<typename Tp, typename Callback>
   Tp HandleMetric(Callback callback) noexcept;
 
