@@ -38,9 +38,9 @@ bool Controller::HandleAgent(Callback callback) noexcept {
   return true;
 }
 
-template<typename Tp, typename Callback>
-Tp Controller::HandleMetric(Callback callback) noexcept {
-  static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
+template<typename Callback, typename return_type>
+return_type Controller::HandleMetric(Callback callback) noexcept {
+  static_assert(std::is_arithmetic_v<return_type>, "Must be arithmetic type");
   auto[stat, val] = callback;
   if (stat != MetricStatus::kOk) {
     std::string error_str = "Agent name: " + model_->ExecutedAgentName() +
@@ -69,39 +69,39 @@ bool Controller::SetConfig(const std::string& config_path) {
 }
 
 double Controller::CpuLoad() {
-  return HandleMetric<double>(model_->CpuLoad());
+  return HandleMetric(model_->CpuLoad());
 }
 
 size_t Controller::CpuProcesses() {
-  return HandleMetric<size_t>(model_->CpuProcesses());
+  return HandleMetric(model_->CpuProcesses());
 }
 
 double Controller::RamTotal() {
-  return HandleMetric<double>(model_->RamTotal());
+  return HandleMetric(model_->RamTotal());
 }
 
 double Controller::Ram() {
-  return HandleMetric<double>(model_->Ram());
+  return HandleMetric(model_->Ram());
 }
 
 double Controller::HardVolume() {
-  return HandleMetric<double>(model_->HardVolume());
+  return HandleMetric(model_->HardVolume());
 }
 
 size_t Controller::HardOps() {
-  return HandleMetric<size_t>(model_->HardOps());
+  return HandleMetric(model_->HardOps());
 }
 
 double Controller::HardThroughput() {
-  return HandleMetric<double>(model_->HardThroughput());
+  return HandleMetric(model_->HardThroughput());
 }
 
 double Controller::InetThroughput() {
-  return HandleMetric<double>(model_->InetThroughput());
+  return HandleMetric(model_->InetThroughput());
 }
 
 int Controller::UrlAvailable() {
-  return HandleMetric<int>(model_->UrlAvailable());
+  return HandleMetric(model_->UrlAvailable());
 }
 
 void Controller::OnException(Controller::OnExceptionCallback callback) {
