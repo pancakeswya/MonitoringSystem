@@ -3,14 +3,16 @@
 
 #include <dlfcn.h>
 
+#include <string_view>
+
 #define __STRING(x) #x
 #define __XSTRING(x) __STRING(x)
 
 namespace monsys::agents {
 
-constexpr const char kAgentCpuPath[] = __XSTRING(_CORELIB_CPU_PATH);
-constexpr const char kAgentMemoryPath[] = __XSTRING(_CORELIB_MEMORY_PATH);
-constexpr const char kAgentNetworkPath[] = __XSTRING(_CORELIB_NETWORK_PATH);
+constexpr std::string_view kAgentCpuPath = __XSTRING(_CORELIB_CPU_PATH);
+constexpr std::string_view kAgentMemoryPath = __XSTRING(_CORELIB_MEMORY_PATH);
+constexpr std::string_view kAgentNetworkPath = __XSTRING(_CORELIB_NETWORK_PATH);
 
 constexpr int kDlFlag = RTLD_LAZY;
 
@@ -49,15 +51,15 @@ Handler::~Handler() {
 }
 
 AgentStatus Handler::ActivateCpuAgent() noexcept {
-  return ActivateAgent(handle_cpu_, kAgentCpuPath);
+  return ActivateAgent(handle_cpu_, kAgentCpuPath.data());
 }
 
 AgentStatus Handler::ActivateMemoryAgent() noexcept {
-  return ActivateAgent(handle_memory_, kAgentMemoryPath);
+  return ActivateAgent(handle_memory_, kAgentMemoryPath.data());
 }
 
 AgentStatus Handler::ActivateNetworkAgent() noexcept {
-  return ActivateAgent(handle_network_, kAgentNetworkPath);
+  return ActivateAgent(handle_network_, kAgentNetworkPath.data());
 }
 
 AgentStatus Handler::DeactivateCpuAgent() noexcept {

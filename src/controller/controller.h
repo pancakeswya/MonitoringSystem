@@ -40,7 +40,7 @@ class Controller {
   Tp HandleMetric(Callback callback) noexcept;
 
   Model* model_;
-  OnExceptionCallback exc_callback_;
+  OnExceptionCallback exc_callback_{};
 };
 
 } // namespace monsys
