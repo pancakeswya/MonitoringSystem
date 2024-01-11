@@ -1,7 +1,8 @@
 # builds and etc
 build*
 cmake-build-*
-.idea
+lib*
+.idea*
 # Prerequisites
 *.d
 
