@@ -1,6 +1,0 @@
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/agent_util.dir
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/agent_cpu.dir
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/agent_memory.dir
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/agent_network.dir
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/edit_cache.dir
-/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/src/agents/lib/CMakeFiles/rebuild_cache.dir
