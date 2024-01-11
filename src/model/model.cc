@@ -44,49 +44,49 @@ agents::AgentStatus Model::LoadNetworkAgent() noexcept {
   return stat;
 }
 
-std::pair<MetricStatus, double> Model::CpuLoad() noexcept {
+std::pair<MetricStatus, double> Model::CpuLoad() {
   MetricConfig metric = config_["cpu_load"];
   double val = cpu_agent_.cpu_load(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, size_t> Model::CpuProcesses() noexcept {
+std::pair<MetricStatus, size_t> Model::CpuProcesses() {
   MetricConfig metric = config_["processes"];
   size_t val = cpu_agent_.cpu_process(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, double> Model::RamTotal() noexcept {
+std::pair<MetricStatus, double> Model::RamTotal() {
   MetricConfig metric = config_["ram_total"];
   double val = memory_agent_.ram_total(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, double> Model::Ram() noexcept {
+std::pair<MetricStatus, double> Model::Ram() {
   MetricConfig metric = config_["ram"];
   double val = memory_agent_.ram(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, double> Model::HardVolume() noexcept {
+std::pair<MetricStatus, double> Model::HardVolume() {
   MetricConfig metric = config_["hard_volume"];
   double val = memory_agent_.hard_volume(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, size_t> Model::HardOps() noexcept {
+std::pair<MetricStatus, size_t> Model::HardOps() {
   MetricConfig metric = config_["hard_ops"];
   size_t val = memory_agent_.hard_ops(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, double> Model::HardThroughput() noexcept {
+std::pair<MetricStatus, double> Model::HardThroughput() {
   MetricConfig metric = config_["hard_throughput"];
   double val = memory_agent_.hard_throughput(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, int> Model::UrlAvailable() noexcept {
+std::pair<MetricStatus, int> Model::UrlAvailable() {
   MetricConfig metric = config_["url"];
   std::string type = metric.type;
   size_t pos = type.find(':');
@@ -98,7 +98,7 @@ std::pair<MetricStatus, int> Model::UrlAvailable() noexcept {
   return RangeBoundsCheck(val, metric.range);
 }
 
-std::pair<MetricStatus, double> Model::InetThroughput() noexcept {
+std::pair<MetricStatus, double> Model::InetThroughput() {
   MetricConfig metric = config_["inet_throughput"];
   double val = network_agent_.inet_throughput(metric.timeout);
   return RangeBoundsCheck(val, metric.range);

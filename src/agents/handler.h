@@ -3,7 +3,7 @@
 
 namespace monsys::agents {
 
-enum class AgentStatus {
+enum class AgentStatus : unsigned char {
   kOk,
   kNotLoaded,
   kAlreadyActive,

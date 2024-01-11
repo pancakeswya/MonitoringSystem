@@ -23,7 +23,7 @@ size_t SkipAlpha(const std::string& str) noexcept {
   return i;
 }
 
-inline SystemConfig DefaultConfig() {
+inline SystemConfig DefaultConfig() noexcept {
   return SystemConfig {
       {"cpu", {}},
       {"processes", {}},
@@ -42,7 +42,7 @@ inline SystemConfig DefaultConfig() {
 } // namespace
 
 std::pair<bool, SystemConfig> ParseFromFile(const std::string& path) {
-  auto config = DefaultConfig();
+  SystemConfig config = DefaultConfig();
   std::ifstream input(path.data(), std::ifstream::binary);
   if (!input.is_open()) {
     return {false, {}};
@@ -70,7 +70,7 @@ std::pair<bool, SystemConfig> ParseFromFile(const std::string& path) {
       } else if (line[i] == '<') {
         config[last_name].range.second = std::strtod(&line[i + 1], nullptr);
       } else if (line[i] == '=' && line[i + 1] == '=') {
-        size_t val = std::strtod(&line[i + 2], nullptr);
+        double val = std::strtod(&line[i + 2], nullptr);
         config[last_name].range.first = val - 1;
         config[last_name].range.second = val + 1;
       }

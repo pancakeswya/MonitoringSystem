@@ -11,7 +11,7 @@
 
 namespace monsys {
 
-enum class MetricStatus {
+enum class MetricStatus : unsigned char {
   kOutOfRange,
   kInvalidUrl,
   kOk
@@ -27,17 +27,17 @@ class Model {
 
   agents::AgentStatus SetConfig(const std::string& config_path);
 
-  std::pair<MetricStatus, double> CpuLoad() noexcept;
-  std::pair<MetricStatus, size_t> CpuProcesses() noexcept;
+  std::pair<MetricStatus, double> CpuLoad();
+  std::pair<MetricStatus, size_t> CpuProcesses();
 
-  std::pair<MetricStatus, double> RamTotal() noexcept;
-  std::pair<MetricStatus, double> Ram() noexcept;
-  std::pair<MetricStatus, double> HardVolume() noexcept;
-  std::pair<MetricStatus, size_t> HardOps() noexcept;
-  std::pair<MetricStatus, double> HardThroughput() noexcept;
+  std::pair<MetricStatus, double> RamTotal();
+  std::pair<MetricStatus, double> Ram();
+  std::pair<MetricStatus, double> HardVolume();
+  std::pair<MetricStatus, size_t> HardOps();
+  std::pair<MetricStatus, double> HardThroughput();
 
-  std::pair<MetricStatus, double> InetThroughput() noexcept;
-  std::pair<MetricStatus, int> UrlAvailable() noexcept;
+  std::pair<MetricStatus, double> InetThroughput();
+  std::pair<MetricStatus, int> UrlAvailable();
 
   void Reset() noexcept;
  private:

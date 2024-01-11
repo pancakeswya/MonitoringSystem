@@ -14,6 +14,30 @@ constexpr const char kAgentNetworkPath[] = __XSTRING(_CORELIB_NETWORK_PATH);
 
 constexpr int kDlFlag = RTLD_LAZY;
 
+namespace {
+
+inline AgentStatus ActivateAgent(void* &handle, const char* path) noexcept {
+  if (handle) {
+    return AgentStatus::kAlreadyActive;
+  }
+  handle = dlopen(path, kDlFlag);
+  if (!handle) {
+    return AgentStatus::kNotLoaded;
+  }
+  return AgentStatus::kOk;
+}
+
+inline AgentStatus DeactivateAgent(void* &handle) noexcept {
+  if (!handle) {
+    return AgentStatus::kInvalidDeactivate;
+  }
+  dlclose(handle);
+  handle = nullptr;
+  return AgentStatus::kOk;
+}
+
+} // namespace
+
 Handler::Handler() noexcept: handle_cpu_(),
                              handle_memory_(),
                              handle_network_() {}
@@ -25,63 +49,27 @@ Handler::~Handler() {
 }
 
 AgentStatus Handler::ActivateCpuAgent() noexcept {
-  if (handle_cpu_) {
-    return AgentStatus::kAlreadyActive;
-  }
-  handle_cpu_ = dlopen(kAgentCpuPath, kDlFlag);
-  if (!handle_cpu_) {
-    return AgentStatus::kNotLoaded;
-  }
-  return AgentStatus::kOk;
+  return ActivateAgent(handle_cpu_, kAgentCpuPath);
 }
 
 AgentStatus Handler::ActivateMemoryAgent() noexcept {
-  if (handle_memory_) {
-    return AgentStatus::kAlreadyActive;
-  }
-  handle_memory_ = dlopen(kAgentMemoryPath, kDlFlag);
-  if (!handle_memory_) {
-    return AgentStatus::kNotLoaded;
-  }
-  return AgentStatus::kOk;
+  return ActivateAgent(handle_memory_, kAgentMemoryPath);
 }
 
 AgentStatus Handler::ActivateNetworkAgent() noexcept {
-  if (handle_network_) {
-    return AgentStatus::kAlreadyActive;
-  }
-  handle_network_ = dlopen(kAgentNetworkPath, kDlFlag);
-  if (!handle_network_) {
-    return AgentStatus::kNotLoaded;
-  }
-  return AgentStatus::kOk;
+  return ActivateAgent(handle_network_, kAgentNetworkPath);
 }
 
 AgentStatus Handler::DeactivateCpuAgent() noexcept {
-  if (!handle_cpu_) {
-    return AgentStatus::kInvalidDeactivate;
-  }
-  dlclose(handle_cpu_);
-  handle_cpu_ = nullptr;
-  return AgentStatus::kOk;
+  return DeactivateAgent(handle_cpu_);
 }
 
 AgentStatus Handler::DeactivateMemoryAgent() noexcept {
-  if (!handle_memory_) {
-    return AgentStatus::kInvalidDeactivate;
-  }
-  dlclose(handle_memory_);
-  handle_memory_ = nullptr;
-  return AgentStatus::kOk;
+  return DeactivateAgent(handle_memory_);
 }
 
 AgentStatus Handler::DeactivateNetworkAgent() noexcept {
-  if (!handle_network_) {
-    return AgentStatus::kInvalidDeactivate;
-  }
-  dlclose(handle_network_);
-  handle_network_ = nullptr;
-  return AgentStatus::kOk;
+  return DeactivateAgent(handle_network_);
 }
 
 } // namespace monsys::agents
