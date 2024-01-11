@@ -17,6 +17,11 @@ class Controller {
   bool LoadCpuAgent() noexcept;
   bool LoadMemoryAgent() noexcept;
   bool LoadNetworkAgent() noexcept;
+
+  void UnloadCpuAgent() noexcept;
+  void UnloadMemoryAgent() noexcept;
+  void UnloadNetworkAgent() noexcept;
+
   bool SetConfig(const std::string& config_path);
 
   double CpuLoad();

@@ -21,6 +21,10 @@ class Model {
   AgentStatus LoadMemoryAgent() noexcept;
   AgentStatus LoadNetworkAgent() noexcept;
 
+  AgentStatus UnloadCpuAgent() noexcept;
+  AgentStatus UnloadMemoryAgent() noexcept;
+  AgentStatus UnloadNetworkAgent() noexcept;
+
   AgentStatus SetConfig(const std::string& config_path);
 
   std::pair<MetricStatus, double> CpuLoad();
@@ -40,8 +44,8 @@ class Model {
 
   void Reset() noexcept;
  private:
-  template<typename Tp>
-  std::pair<MetricStatus, Tp> ExecuteAgent(std::function<Tp(unsigned int)> callback);
+  template<typename Callback>
+  auto ExecuteAgent(Callback callback);
 
   agents::Builder builder_;
   agents::Handler handler_;

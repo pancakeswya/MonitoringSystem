@@ -31,7 +31,7 @@ bool Controller::HandleAgent(Callback callback) noexcept {
   AgentStatus stat = callback;
   if (stat != AgentStatus::kOk) {
     std::string error_str = "Agent name: " + model_->ExecutedAgentName() +
-                            "Error: " + agent_status_map.at(stat);
+                            "\nError: " + agent_status_map.at(stat);
     exc_callback_(error_str);
     return false;
   }
@@ -39,15 +39,15 @@ bool Controller::HandleAgent(Callback callback) noexcept {
 }
 
 template<typename Callback, typename return_type>
-return_type Controller::HandleMetric(Callback callback) noexcept {
+inline return_type Controller::HandleMetric(Callback callback) noexcept {
   static_assert(std::is_arithmetic_v<return_type>, "Must be arithmetic type");
   auto[stat, val] = callback;
   if (stat != MetricStatus::kOk) {
     std::string error_str = "Agent name: " + model_->ExecutedAgentName() +
-                            "Agent type: " + model_->ExecutedAgentType() +
-                            "Error: " + metric_status_map.at(stat);
+                            "\nAgent type: " + model_->ExecutedAgentType() +
+                            "\nError: " + metric_status_map.at(stat);
     exc_callback_(error_str);
-    return 0;
+    return {};
   }
   return val;
 }
@@ -62,6 +62,18 @@ bool Controller::LoadMemoryAgent() noexcept {
 
 bool Controller::LoadNetworkAgent() noexcept {
   return HandleAgent(model_->LoadNetworkAgent());
+}
+
+void Controller::UnloadCpuAgent() noexcept {
+  HandleAgent(model_->UnloadCpuAgent());
+}
+
+void Controller::UnloadMemoryAgent() noexcept {
+  HandleAgent(model_->UnloadMemoryAgent());
+}
+
+void Controller::UnloadNetworkAgent() noexcept {
+  HandleAgent(model_->UnloadNetworkAgent());
 }
 
 bool Controller::SetConfig(const std::string& config_path) {

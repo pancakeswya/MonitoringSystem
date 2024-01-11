@@ -11,12 +11,12 @@ template<typename Tp>
 inline std::pair<MetricStatus, Tp> RangeBoundsCheck(Tp val, std::pair<double, double> range) noexcept {
   static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
   if (val < range.first || val > range.second) {
-    return {MetricStatus::kOutOfRange, 0};
+    return {MetricStatus::kOutOfRange, {}};
   }
   return {MetricStatus::kOk, val};
 }
 
-std::string GetUrl(const std::string& type) {
+inline std::string GetUrl(const std::string& type) {
   size_t pos = type.find(':');
   if (pos == std::string::npos) {
     return "";
@@ -65,67 +65,81 @@ AgentStatus Model::LoadNetworkAgent() noexcept {
   return stat;
 }
 
-template<typename Tp>
-std::pair<MetricStatus, Tp> Model::ExecuteAgent(std::function<Tp(unsigned int)> callback) {
-  static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
+AgentStatus Model::UnloadCpuAgent() noexcept {
+  executed_agent_name_ = "cpu_agent";
+  return handler_.DeactivateCpuAgent();
+}
+
+AgentStatus Model::UnloadMemoryAgent() noexcept {
+  executed_agent_name_ = "memory_agent";
+  return handler_.DeactivateMemoryAgent();
+}
+
+AgentStatus Model::UnloadNetworkAgent() noexcept {
+  executed_agent_name_ = "network_agent";
+  return handler_.DeactivateNetworkAgent();
+}
+
+template<typename Callback>
+inline auto Model::ExecuteAgent(Callback callback) {
   MetricConfig metric = config_[executed_agent_type_];
-  Tp val = callback(metric.timeout);
+  auto val = callback(metric.timeout);
   return RangeBoundsCheck(val, metric.range);
 }
 
 std::pair<MetricStatus, double> Model::CpuLoad() {
   executed_agent_name_ = "cpu_agent";
   executed_agent_type_ = "cpu_load";
-  return ExecuteAgent<double>(cpu_agent_.cpu_load);
+  return ExecuteAgent(cpu_agent_.cpu_load);
 }
 
 std::pair<MetricStatus, size_t> Model::CpuProcesses() {
   executed_agent_name_ = "cpu_agent";
   executed_agent_type_ = "processes";
-  return ExecuteAgent<size_t>(cpu_agent_.cpu_process);
+  return ExecuteAgent(cpu_agent_.cpu_process);
 }
 
 std::pair<MetricStatus, double> Model::RamTotal() {
   executed_agent_name_ = "memory_agent";
   executed_agent_type_ = "ram_total";
-  return ExecuteAgent<double>(memory_agent_.ram_total);
+  return ExecuteAgent(memory_agent_.ram_total);
 }
 
 std::pair<MetricStatus, double> Model::Ram() {
   executed_agent_name_ = "memory_agent";
   executed_agent_type_ = "ram";
-  return ExecuteAgent<double>(memory_agent_.ram);
+  return ExecuteAgent(memory_agent_.ram);
 }
 
 std::pair<MetricStatus, double> Model::HardVolume() {
   executed_agent_name_ = "memory_agent";
   executed_agent_type_ = "hard_volume";
-  return ExecuteAgent<double>(memory_agent_.hard_volume);
+  return ExecuteAgent(memory_agent_.hard_volume);
 }
 
 std::pair<MetricStatus, size_t> Model::HardOps() {
   executed_agent_name_ = "memory_agent";
   executed_agent_type_ = "hard_ops";
-  return ExecuteAgent<size_t>(memory_agent_.hard_ops);
+  return ExecuteAgent(memory_agent_.hard_ops);
 }
 
 std::pair<MetricStatus, double> Model::HardThroughput() {
   executed_agent_name_ = "memory_agent";
   executed_agent_type_ = "hard_throughput";
-  return ExecuteAgent<double>(memory_agent_.hard_throughput);
+  return ExecuteAgent(memory_agent_.hard_throughput);
 }
 
 std::pair<MetricStatus, int> Model::UrlAvailable() {
   executed_agent_name_ = "network_agent";
   executed_agent_type_ = "url";
   std::string url = GetUrl(config_[executed_agent_type_].type);
-  return ExecuteAgent<int>(std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1));
+  return ExecuteAgent(std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1));
 }
 
 std::pair<MetricStatus, double> Model::InetThroughput() {
   executed_agent_name_ = "network_agent";
   executed_agent_type_ = "inet_throughput";
-  return ExecuteAgent<double>(network_agent_.inet_throughput);
+  return ExecuteAgent(network_agent_.inet_throughput);
 }
 
 const std::string& Model::ExecutedAgentType() noexcept {
