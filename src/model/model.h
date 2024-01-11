@@ -4,28 +4,24 @@
 #include "agents/agents.h"
 #include "agents/builder.h"
 #include "agents/handler.h"
+#include "base/types.h"
 #include "model/config.h"
 
+#include <functional>
 #include <string>
 #include <utility>
 
 namespace monsys {
 
-enum class MetricStatus : unsigned char {
-  kOutOfRange,
-  kInvalidUrl,
-  kOk
-};
-
 class Model {
  public:
   Model() noexcept;
 
-  agents::AgentStatus LoadCpuAgent() noexcept;
-  agents::AgentStatus LoadMemoryAgent() noexcept;
-  agents::AgentStatus LoadNetworkAgent() noexcept;
+  AgentStatus LoadCpuAgent() noexcept;
+  AgentStatus LoadMemoryAgent() noexcept;
+  AgentStatus LoadNetworkAgent() noexcept;
 
-  agents::AgentStatus SetConfig(const std::string& config_path);
+  AgentStatus SetConfig(const std::string& config_path);
 
   std::pair<MetricStatus, double> CpuLoad();
   std::pair<MetricStatus, size_t> CpuProcesses();
@@ -39,14 +35,23 @@ class Model {
   std::pair<MetricStatus, double> InetThroughput();
   std::pair<MetricStatus, int> UrlAvailable();
 
+  const std::string& ExecutedAgentType() noexcept;
+  const std::string& ExecutedAgentName() noexcept;
+
   void Reset() noexcept;
  private:
+  template<typename Tp>
+  std::pair<MetricStatus, Tp> ExecuteAgent(std::function<Tp(unsigned int)> callback);
+
   agents::Builder builder_;
   agents::Handler handler_;
 
   agents::CPU cpu_agent_;
   agents::Memory memory_agent_;
   agents::Network network_agent_;
+
+  std::string executed_agent_name_;
+  std::string executed_agent_type_;
 
   SystemConfig config_;
 };

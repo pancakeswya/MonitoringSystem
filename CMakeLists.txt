@@ -30,10 +30,16 @@ add_library(Model STATIC
 
 target_link_libraries(Model AgentsHandler AgentsBuilder ConfigParser)
 
+add_library(Controller STATIC
+        ${SRC_DIR}/controller/controller.cc
+        ${SRC_DIR}/controller/controller.h)
+
+target_link_libraries(Controller Model)
+
 add_executable(MonitoringSystem
         ${SRC_DIR}/main.cc)
 
-target_link_libraries(MonitoringSystem Model)
+target_link_libraries(MonitoringSystem Controller)
 
 add_compile_definitions("_CORELIB_CPU_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_CPU_PATH}")
 add_compile_definitions("_CORELIB_MEMORY_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_MEMORY_PATH}")

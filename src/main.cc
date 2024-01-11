@@ -1,3 +1,4 @@
+#include "controller/controller.h"
 #include "model/model.h"
 
 #include <iostream>
@@ -6,89 +7,33 @@
 int main() {
   const std::string path = "/mnt/c/Users/niyaz/CLionProjects/MonitoringSystem/resources/conf.agents";
   monsys::Model model;
-  model.SetConfig(path);
+  monsys::Controller controller(&model);
 
-  using AgentStatus = monsys::agents::AgentStatus;
-  AgentStatus stat;
-  stat = model.LoadCpuAgent();
-  if (stat != AgentStatus::kOk) {
-    std::cout << "Cpu lib not loaded code: " << int(stat) << std::endl;
-    return 1;
-  }
-  stat = model.LoadMemoryAgent();
-  if (stat != AgentStatus::kOk) {
-    std::cout << "Memory lib not loaded code: " << int(stat) << std::endl;
-    return 1;
-  }
-  stat = model.LoadNetworkAgent();
-  if (stat != AgentStatus::kOk) {
-    std::cout << "Network lib not loaded code: " <<  int(stat) << std::endl;
+  controller.OnException([](const std::string& error) {
+    std::cout << error << std::endl;
+  });
+
+  controller.SetConfig(path);
+
+  bool loaded = true;
+
+  loaded &= controller.LoadCpuAgent();
+  loaded &= controller.LoadMemoryAgent();
+  loaded &= controller.LoadNetworkAgent();
+
+  if (!loaded) {
     return 1;
   }
 
-  using MetricStatus = monsys::MetricStatus;
+  std::cout << "cpu load: " << controller.CpuLoad() << std::endl;
+  std::cout << "cpu processes: " << controller.CpuProcesses() << std::endl;
+  std::cout << "ram total: " << controller.RamTotal() << std::endl;
+  std::cout << "ram: " << controller.Ram() << std::endl;
+  std::cout << "hard ops: " << controller.HardOps() << std::endl;
+  std::cout << "hard volume: " << controller.HardVolume() << std::endl;
+  std::cout << "hard throughput: " << controller.HardThroughput() << std::endl;
+  std::cout << "url available: " << controller.UrlAvailable() << std::endl;
+  std::cout << "inet throughput: " << controller.InetThroughput() << std::endl;
 
-  auto[load_stat, cpu_load] = model.CpuLoad();
-  if (load_stat != MetricStatus::kOk) {
-    std::cout << "Cpu load failed code: " << int(load_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "CPU load: " << cpu_load << std::endl;
-
-  auto[proc_stat, proc] = model.CpuProcesses();
-  if (proc_stat != MetricStatus::kOk) {
-    std::cout << "Cpu proc failed code: " << int(proc_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Cpu proc: " << proc << std::endl;
-
-  auto[ram_stat, ram] = model.Ram();
-  if (ram_stat != MetricStatus::kOk) {
-    std::cout << "Ram failed code: " << int(ram_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Ram: " << ram << std::endl;
-
-  auto[ram_total_stat, ram_total] = model.RamTotal();
-  if (ram_total_stat != MetricStatus::kOk) {
-    std::cout << "Ram total failed code: " << int(ram_total_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Ram total: " << ram_total << std::endl;
-
-  auto[ops_stat, ops] = model.HardOps();
-  if (ops_stat != MetricStatus::kOk) {
-    std::cout << "Ops failed code: " << int(ops_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Hard ops: " << ops << std::endl;
-
-  auto[volume_stat, volume] = model.HardVolume();
-  if (volume_stat != MetricStatus::kOk) {
-    std::cout << "Volume failed code: " << int(volume_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Hard volume: " << volume << std::endl;
-
-  auto[h_throughput_stat, h_throughput] = model.HardThroughput();
-  if (h_throughput_stat != MetricStatus::kOk) {
-    std::cout << "Hard throughout failed code: " << int(h_throughput_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Hard throughout: " << h_throughput << std::endl;
-
-  auto[url_stat, url] = model.UrlAvailable();
-  if (url_stat != MetricStatus::kOk) {
-    std::cout << "Url available failed code: " << int(url_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Url available: " << url << std::endl;
-
-  auto[i_throughput_stat,i_throughput] = model.InetThroughput();
-  if (i_throughput_stat != MetricStatus::kOk) {
-    std::cout << "Inet throughput available failed code: " << int(i_throughput_stat) << std::endl;
-    return 1;
-  }
-  std::cout << "Inet throughput: " << i_throughput << std::endl;
   return 0;
 }

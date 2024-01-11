@@ -1,15 +1,27 @@
 #include "model/model.h"
 #include "model/config_parser.h"
 
+#include <type_traits>
+
 namespace monsys {
 
 namespace {
 
-inline std::pair<MetricStatus, double> RangeBoundsCheck(double val, std::pair<double, double> range) noexcept {
+template<typename Tp>
+inline std::pair<MetricStatus, Tp> RangeBoundsCheck(Tp val, std::pair<double, double> range) noexcept {
+  static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
   if (val < range.first || val > range.second) {
-    return {MetricStatus::kOutOfRange, 0.0};
+    return {MetricStatus::kOutOfRange, 0};
   }
   return {MetricStatus::kOk, val};
+}
+
+std::string GetUrl(const std::string& type) {
+  size_t pos = type.find(':');
+  if (pos == std::string::npos) {
+    return "";
+  }
+  return type.substr(pos + 1);
 }
 
 } // namespace
@@ -17,91 +29,111 @@ inline std::pair<MetricStatus, double> RangeBoundsCheck(double val, std::pair<do
 Model::Model() noexcept : builder_(&handler_), cpu_agent_(),
                           memory_agent_(), network_agent_() {}
 
-agents::AgentStatus Model::SetConfig(const std::string& config_path) {
+AgentStatus Model::SetConfig(const std::string& config_path) {
   auto[ok, conf] = ConfigParser::ParseFromFile(config_path);
   if (!ok) {
-    return agents::AgentStatus::kNotLoaded;
+    return AgentStatus::kNotLoaded;
   }
   config_ = std::move(conf);
-  return agents::AgentStatus::kOk;
+  return AgentStatus::kOk;
 }
 
-agents::AgentStatus Model::LoadCpuAgent() noexcept {
-  agents::AgentStatus stat = handler_.ActivateCpuAgent();
-  cpu_agent_ = builder_.BuildCpuAgent();
+AgentStatus Model::LoadCpuAgent() noexcept {
+  executed_agent_name_ = "cpu_agent";
+  AgentStatus stat = handler_.ActivateCpuAgent();
+  if (stat == AgentStatus::kOk) {
+    cpu_agent_ = builder_.BuildCpuAgent();
+  }
   return stat;
 }
 
-agents::AgentStatus Model::LoadMemoryAgent() noexcept {
-  agents::AgentStatus stat = handler_.ActivateMemoryAgent();
-  memory_agent_ = builder_.BuildMemoryAgent();
+AgentStatus Model::LoadMemoryAgent() noexcept {
+  executed_agent_name_ = "memory_agent";
+  AgentStatus stat = handler_.ActivateMemoryAgent();
+  if (stat == AgentStatus::kOk) {
+    memory_agent_ = builder_.BuildMemoryAgent();
+  }
   return stat;
 }
 
-agents::AgentStatus Model::LoadNetworkAgent() noexcept {
-  agents::AgentStatus stat = handler_.ActivateNetworkAgent();
-  network_agent_ = builder_.BuildNetworkAgent();
+AgentStatus Model::LoadNetworkAgent() noexcept {
+  executed_agent_name_ = "network_agent";
+  AgentStatus stat = handler_.ActivateNetworkAgent();
+  if (stat == AgentStatus::kOk) {
+    network_agent_ = builder_.BuildNetworkAgent();
+  }
   return stat;
+}
+
+template<typename Tp>
+std::pair<MetricStatus, Tp> Model::ExecuteAgent(std::function<Tp(unsigned int)> callback) {
+  static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
+  MetricConfig metric = config_[executed_agent_type_];
+  Tp val = callback(metric.timeout);
+  return RangeBoundsCheck(val, metric.range);
 }
 
 std::pair<MetricStatus, double> Model::CpuLoad() {
-  MetricConfig metric = config_["cpu_load"];
-  double val = cpu_agent_.cpu_load(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "cpu_agent";
+  executed_agent_type_ = "cpu_load";
+  return ExecuteAgent<double>(cpu_agent_.cpu_load);
 }
 
 std::pair<MetricStatus, size_t> Model::CpuProcesses() {
-  MetricConfig metric = config_["processes"];
-  size_t val = cpu_agent_.cpu_process(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "cpu_agent";
+  executed_agent_type_ = "processes";
+  return ExecuteAgent<size_t>(cpu_agent_.cpu_process);
 }
 
 std::pair<MetricStatus, double> Model::RamTotal() {
-  MetricConfig metric = config_["ram_total"];
-  double val = memory_agent_.ram_total(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "memory_agent";
+  executed_agent_type_ = "ram_total";
+  return ExecuteAgent<double>(memory_agent_.ram_total);
 }
 
 std::pair<MetricStatus, double> Model::Ram() {
-  MetricConfig metric = config_["ram"];
-  double val = memory_agent_.ram(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "memory_agent";
+  executed_agent_type_ = "ram";
+  return ExecuteAgent<double>(memory_agent_.ram);
 }
 
 std::pair<MetricStatus, double> Model::HardVolume() {
-  MetricConfig metric = config_["hard_volume"];
-  double val = memory_agent_.hard_volume(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "memory_agent";
+  executed_agent_type_ = "hard_volume";
+  return ExecuteAgent<double>(memory_agent_.hard_volume);
 }
 
 std::pair<MetricStatus, size_t> Model::HardOps() {
-  MetricConfig metric = config_["hard_ops"];
-  size_t val = memory_agent_.hard_ops(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "memory_agent";
+  executed_agent_type_ = "hard_ops";
+  return ExecuteAgent<size_t>(memory_agent_.hard_ops);
 }
 
 std::pair<MetricStatus, double> Model::HardThroughput() {
-  MetricConfig metric = config_["hard_throughput"];
-  double val = memory_agent_.hard_throughput(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "memory_agent";
+  executed_agent_type_ = "hard_throughput";
+  return ExecuteAgent<double>(memory_agent_.hard_throughput);
 }
 
 std::pair<MetricStatus, int> Model::UrlAvailable() {
-  MetricConfig metric = config_["url"];
-  std::string type = metric.type;
-  size_t pos = type.find(':');
-  if (pos == std::string::npos) {
-    return {MetricStatus::kInvalidUrl, 0};
-  }
-  std::string url = type.substr(pos + 1);
-  int val = network_agent_.url_available(url.c_str(), metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "network_agent";
+  executed_agent_type_ = "url";
+  std::string url = GetUrl(config_[executed_agent_type_].type);
+  return ExecuteAgent<int>(std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1));
 }
 
 std::pair<MetricStatus, double> Model::InetThroughput() {
-  MetricConfig metric = config_["inet_throughput"];
-  double val = network_agent_.inet_throughput(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+  executed_agent_name_ = "network_agent";
+  executed_agent_type_ = "inet_throughput";
+  return ExecuteAgent<double>(network_agent_.inet_throughput);
+}
+
+const std::string& Model::ExecutedAgentType() noexcept {
+  return executed_agent_name_;
+}
+
+const std::string& Model::ExecutedAgentName() noexcept {
+  return executed_agent_type_;
 }
 
 void Model::Reset() noexcept {

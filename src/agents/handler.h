@@ -1,14 +1,9 @@
 #ifndef MONITORINGSYSTEM_SRC_AGENTS_HANDLER_H_
 #define MONITORINGSYSTEM_SRC_AGENTS_HANDLER_H_
 
-namespace monsys::agents {
+#include "base/types.h"
 
-enum class AgentStatus : unsigned char {
-  kOk,
-  kNotLoaded,
-  kAlreadyActive,
-  kInvalidDeactivate
-};
+namespace monsys::agents {
 
 class Handler {
  public:
