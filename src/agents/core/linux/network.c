@@ -41,7 +41,7 @@ int UrlAvailable(const char* url, unsigned int delay) {
   return res == 0;
 }
 
-static size_t GetTotalBytes() {
+static size_t GetTotalBytes(void) {
   FILE* stat_file = fopen("/proc/net/dev", "r");
   assert(stat_file != NULL);
   char* line = (char*)malloc(BUFFER_SIZE);

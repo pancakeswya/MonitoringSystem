@@ -10,7 +10,7 @@
 #include <sys/sysctl.h>
 #include <unistd.h>
 
-static vm_statistics_data_t GetRamVmStat() {
+static vm_statistics_data_t GetRamVmStat(void) {
   static int mib[] = {CTL_HW, HW_MEMSIZE};
   int64_t value = 0;
   size_t length = sizeof(value);
@@ -26,7 +26,7 @@ static vm_statistics_data_t GetRamVmStat() {
   return vmstat;
 }
 
-static size_t GetIOBytes() {
+static size_t GetIOBytes(void) {
   int n = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0);
 
   int *pids = (int *)malloc(n * sizeof(int));

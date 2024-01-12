@@ -41,6 +41,7 @@ add_executable(MonitoringSystem
 
 target_link_libraries(MonitoringSystem Controller)
 
+add_compile_definitions("_LOG_PATH=${CMAKE_SOURCE_DIR}/${LOG_PATH}")
 add_compile_definitions("_CORELIB_CPU_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_CPU_PATH}")
 add_compile_definitions("_CORELIB_MEMORY_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_MEMORY_PATH}")
 add_compile_definitions("_CORELIB_NETWORK_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_NETWORK_PATH}")

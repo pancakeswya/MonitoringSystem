@@ -13,7 +13,7 @@ enum CPUParameters {
   kCpStates = 4
 };
 
-static host_cpu_load_info_data_t GetCpuPercentage() {
+static host_cpu_load_info_data_t GetCpuPercentage(void) {
   kern_return_t error;
   mach_msg_type_number_t count;
   host_cpu_load_info_data_t r_load;

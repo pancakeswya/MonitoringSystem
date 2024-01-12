@@ -22,7 +22,7 @@ int UrlAvailable(const char *url, unsigned int delay) {
   return res == 0;
 }
 
-static size_t GetTotalBytes() {
+static size_t GetTotalBytes(void) {
   int mib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0};
   size_t len;
   int res = sysctl(mib, 6, NULL, &len, NULL, 0);

@@ -1,18 +1,9 @@
 #include "agents/handler.h"
-#include "agents/agents.h"
+#include "base/paths.h"
 
 #include <dlfcn.h>
 
-#include <string_view>
-
-#define __STRING(x) #x
-#define __XSTRING(x) __STRING(x)
-
 namespace monsys::agents {
-
-constexpr std::string_view kAgentCpuPath = __XSTRING(_CORELIB_CPU_PATH);
-constexpr std::string_view kAgentMemoryPath = __XSTRING(_CORELIB_MEMORY_PATH);
-constexpr std::string_view kAgentNetworkPath = __XSTRING(_CORELIB_NETWORK_PATH);
 
 constexpr int kDlFlag = RTLD_LAZY;
 

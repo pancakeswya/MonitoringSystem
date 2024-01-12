@@ -2,7 +2,6 @@
 #include "model/model.h"
 
 #include <unordered_map>
-#include <type_traits>
 
 namespace monsys {
 
@@ -27,7 +26,7 @@ Controller::Controller(Model* model) noexcept
   : model_(model) {}
 
 template<typename Callback>
-bool Controller::HandleAgent(Callback callback) noexcept {
+inline bool Controller::HandleAgent(Callback callback) noexcept {
   AgentStatus stat = callback;
   if (stat != AgentStatus::kOk) {
     std::string error_str = "Agent name: " + model_->ExecutedAgentName() +

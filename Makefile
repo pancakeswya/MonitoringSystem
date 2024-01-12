@@ -4,6 +4,7 @@ NAME   := MonitoringSystem
 CMAKE := cmake
 
 SRC_DIR   := src
+LOG_DIR   := $(SRC_DIR)/log
 BUILD_DIR := build
 
 AGENTSCORELIB_DIR := $(SRC_DIR)/agents/lib
@@ -40,6 +41,7 @@ agentslib:
 build: agentslib
 	mkdir -p $(BUILD_DIR)
 	$(CMAKE) -B$(BUILD_DIR) \
+		-DLOG_PATH=$(LOG_DIR) \
 		-DCORELIB_CPU_PATH=$(word 1, $(AGENTSLIB_PATH)) \
 		-DCORELIB_MEMORY_PATH=$(word 2, $(AGENTSLIB_PATH)) \
 		-DCORELIB_NETWORK_PATH=$(word 3, $(AGENTSLIB_PATH)) && \
@@ -50,6 +52,7 @@ run:
 
 clean:
 	$(RM) $(BUILD_DIR)
+	$(RM) $(LOG_DIR)
 	$(RM) $(AGENTSCORELIB_DIR)
 
 rebuild: clean build
