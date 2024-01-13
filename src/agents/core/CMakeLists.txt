@@ -4,6 +4,8 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories("../..")
 
+find_package(CURL REQUIRED)
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CORE_SRC macos)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -37,3 +39,5 @@ add_library(agent_network SHARED
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(agent_network agent_util)
 endif()
+
+target_link_libraries(agent_network CURL::libcurl)

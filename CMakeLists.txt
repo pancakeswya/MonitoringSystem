@@ -12,6 +12,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/agents/core)
 
+add_library(Types STATIC
+        ${SRC_DIR}/base/types.cc
+        ${SRC_DIR}/base/types.h)
+
 add_library(AgentsHandler STATIC
         ${SRC_DIR}/agents/handler.cc
         ${SRC_DIR}/agents/handler.h)
@@ -34,7 +38,7 @@ add_library(Controller STATIC
         ${SRC_DIR}/controller/controller.cc
         ${SRC_DIR}/controller/controller.h)
 
-target_link_libraries(Controller Model)
+target_link_libraries(Controller Model Types)
 
 add_executable(MonitoringSystem
         ${SRC_DIR}/main.cc)

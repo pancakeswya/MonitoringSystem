@@ -1,54 +1,24 @@
 #include "controller/controller.h"
-#include "model/model.h"
 
-#include <unordered_map>
+#include <utility>
+#include "model/model.h"
+#include "base/types.h"
 
 namespace monsys {
-
-namespace {
-
-const std::unordered_map<AgentStatus, std::string> agent_status_map = {
-    {AgentStatus::kOk, "No exception"},
-    {AgentStatus::kNotLoaded, "Agent not loaded"},
-    {AgentStatus::kAlreadyActive, "Agent already active"},
-    {AgentStatus::kInvalidDeactivate, "Invalid agent deactivation"}
-};
-
-const std::unordered_map<MetricStatus, std::string> metric_status_map = {
-    {MetricStatus::kOk, "No exception"},
-    {MetricStatus::kOutOfRange, "Metric is out of range"},
-    {MetricStatus::kInvalidUrl, "Invalid url"}
-};
-
-} // namespace
 
 Controller::Controller(Model* model) noexcept
   : model_(model) {}
 
 template<typename Callback>
 inline bool Controller::HandleAgent(Callback callback) noexcept {
-  AgentStatus stat = callback;
-  if (stat != AgentStatus::kOk) {
-    std::string error_str = "Agent name: " + model_->ExecutedAgentName() +
-                            "\nError: " + agent_status_map.at(stat);
+  AgentResponse response = callback;
+  if (response.status != AgentStatus::kOk) {
+    std::string error_str = "Agent name: " + response.name +
+                            "\nError: " + GetStatusString(response.status);
     exc_callback_(error_str);
     return false;
   }
   return true;
-}
-
-template<typename Callback, typename return_type>
-inline return_type Controller::HandleMetric(Callback callback) noexcept {
-  static_assert(std::is_arithmetic_v<return_type>, "Must be arithmetic type");
-  auto[stat, val] = callback;
-  if (stat != MetricStatus::kOk) {
-    std::string error_str = "Agent name: " + model_->ExecutedAgentName() +
-                            "\nAgent type: " + model_->ExecutedAgentType() +
-                            "\nError: " + metric_status_map.at(stat);
-    exc_callback_(error_str);
-    return {};
-  }
-  return val;
 }
 
 bool Controller::LoadCpuAgent() noexcept {
@@ -75,48 +45,57 @@ void Controller::UnloadNetworkAgent() noexcept {
   HandleAgent(model_->UnloadNetworkAgent());
 }
 
+void Controller::UpdateMetrics() {
+  MetricResponse response = model_->UpdateMetrics();
+  if (response.status != MetricStatus::kOk) {
+    exc_callback_("Agent name: " + response.name +
+                  "\nAgent type: " + response.type +
+                  "\nError: " + GetStatusString(response.status));
+  }
+}
+
 bool Controller::SetConfig(const std::string& config_path) {
   return HandleAgent(model_->SetConfig(config_path));
 }
 
 double Controller::CpuLoad() {
-  return HandleMetric(model_->CpuLoad());
+  return model_->CpuLoad();
 }
 
 size_t Controller::CpuProcesses() {
-  return HandleMetric(model_->CpuProcesses());
+  return model_->CpuProcesses();
 }
 
 double Controller::RamTotal() {
-  return HandleMetric(model_->RamTotal());
+  return model_->RamTotal();
 }
 
 double Controller::Ram() {
-  return HandleMetric(model_->Ram());
+  return model_->Ram();
 }
 
 double Controller::HardVolume() {
-  return HandleMetric(model_->HardVolume());
+  return model_->HardVolume();
 }
 
 size_t Controller::HardOps() {
-  return HandleMetric(model_->HardOps());
+  return model_->HardOps();
 }
 
 double Controller::HardThroughput() {
-  return HandleMetric(model_->HardThroughput());
+  return model_->HardThroughput();
 }
 
 double Controller::InetThroughput() {
-  return HandleMetric(model_->InetThroughput());
+  return model_->InetThroughput();
 }
 
 int Controller::UrlAvailable() {
-  return HandleMetric(model_->UrlAvailable());
+  return model_->UrlAvailable();
 }
 
 void Controller::OnException(Controller::OnExceptionCallback callback) {
-  exc_callback_ = callback;
+  exc_callback_ = std::move(callback);
 }
 
 void Controller::Reset() noexcept {

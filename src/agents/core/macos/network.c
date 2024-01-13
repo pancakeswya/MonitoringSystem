@@ -9,17 +9,21 @@
 #include <sys/sysctl.h>
 #include <unistd.h>
 
+#include <curl/curl.h>
+#include <curl/easy.h>
+
 int UrlAvailable(const char *url, unsigned int delay) {
   usleep(delay);
-  const char util[] = "curl --head --silent --fail --output /dev/null ";
-  size_t util_len = strlen(util), url_len = strlen(url);
-  char *command = (char *)malloc(util_len + url_len + 1);
-  strcpy(command, util);
-  strcpy(command + util_len, url);
-  command[util_len + url_len] = '\n';
-  int res = system(command);
-  free(command);
-  return res == 0;
+
+  CURLcode response = CURLE_FAILED_INIT;
+  CURL *curl = curl_easy_init();
+  if (curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+    response = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+  }
+  return response == CURLE_OK;
 }
 
 static size_t GetTotalBytes(void) {

@@ -2,6 +2,8 @@
 #define MONITORINGSYSTEM_SRC_AGENTS_HANDLER_H_
 
 #include "base/types.h"
+#include "base/paths.h"
+#include "agents/agents.h"
 
 namespace monsys::agents {
 
@@ -10,21 +12,71 @@ class Handler {
   Handler() noexcept;
   ~Handler();
 
-  AgentStatus ActivateCpuAgent() noexcept;
-  AgentStatus ActivateMemoryAgent() noexcept;
-  AgentStatus ActivateNetworkAgent() noexcept;
+  template<typename Tp>
+  AgentStatus ActivateAgent() noexcept;
 
-  AgentStatus DeactivateCpuAgent() noexcept;
-  AgentStatus DeactivateMemoryAgent() noexcept;
-  AgentStatus DeactivateNetworkAgent() noexcept;
+  template<typename Tp>
+  AgentStatus DeactivateAgent() noexcept;
+
+  template<typename Tp>
+  bool AgentIsActive() noexcept;
 
  private:
   friend class Builder;
+
+  static AgentStatus ActivateAgent(void* &handle, const char* path) noexcept;
+  static AgentStatus DeactivateAgent(void* &handle) noexcept;
 
   void *handle_cpu_;
   void *handle_memory_;
   void *handle_network_;
 };
+
+template<>
+inline AgentStatus Handler::ActivateAgent<CPU>() noexcept {
+  return ActivateAgent(handle_cpu_, kAgentCpuPath.data());
+}
+
+template<>
+inline AgentStatus Handler::ActivateAgent<Memory>() noexcept {
+  return ActivateAgent(handle_memory_, kAgentMemoryPath.data());
+}
+
+template<>
+inline AgentStatus Handler::ActivateAgent<Network>() noexcept {
+  return ActivateAgent(handle_network_, kAgentNetworkPath.data());
+}
+
+template<>
+inline AgentStatus Handler::DeactivateAgent<CPU>() noexcept {
+  return DeactivateAgent(handle_cpu_);
+}
+
+template<>
+inline AgentStatus Handler::DeactivateAgent<Memory>() noexcept {
+  return DeactivateAgent(handle_memory_);
+}
+
+template<>
+inline AgentStatus Handler::DeactivateAgent<Network>() noexcept {
+  return DeactivateAgent(handle_network_);
+}
+
+template<>
+inline bool Handler::AgentIsActive<CPU>() noexcept {
+  return handle_cpu_ != nullptr;
+}
+
+template<>
+inline bool Handler::AgentIsActive<Memory>() noexcept {
+  return handle_memory_ != nullptr;
+}
+
+template<>
+inline bool Handler::AgentIsActive<Network>() noexcept {
+  return handle_network_ != nullptr;
+}
+
 
 } // namespace monsys::agents
 

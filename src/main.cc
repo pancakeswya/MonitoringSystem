@@ -21,6 +21,8 @@ int main() {
   loaded &= controller.LoadMemoryAgent();
   loaded &= controller.LoadNetworkAgent();
 
+  controller.UpdateMetrics();
+
   if (!loaded) {
     return 1;
   }

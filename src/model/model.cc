@@ -1,17 +1,15 @@
 #include "model/model.h"
 #include "model/config_parser.h"
-#include "base/logger.h"
-#include "base/paths.h"
 
-#include <filesystem>
+#include <condition_variable>
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 
 namespace monsys {
 
 namespace {
-
-const std::string kFilePath = std::string(" file path: ") + __FILE__;
-
-constexpr const char kFail[] = " fail at line ", kSuccess[] = " success at line ";
 
 template<typename Tp>
 inline std::pair<MetricStatus, Tp> RangeBoundsCheck(Tp val, std::pair<double, double> range) noexcept {
@@ -30,188 +28,183 @@ inline std::string GetUrl(const std::string& type) {
   return type.substr(pos + 1);
 }
 
-inline const char* GetMetricStatusString(MetricStatus status) {
-  return (status == MetricStatus::kOk) ? kSuccess : kFail;
-}
-
 } // namespace
 
-Model::Model() noexcept : builder_(&handler_), cpu_agent_(),
-                          memory_agent_(), network_agent_() {
-  if (!std::filesystem::exists(kLogsPath)) {
-    std::filesystem::create_directory(kLogsPath);
-  }
+template<typename Callback>
+inline auto Model::ExecuteAgent(Callback callback, const char* name) {
+  MetricConfig metric_config = config_[name];
+  auto curr_val = callback(metric_config.timeout);
+  auto[stat, res_val] = RangeBoundsCheck(curr_val, metric_config.range);
+  return std::pair<decltype(res_val), MetricResponse>{res_val,
+                                                      {.status = stat,
+                                                          .name = name,
+                                                          .type = metric_config.type
+                                                      }};
 }
 
-AgentStatus Model::SetConfig(const std::string& config_path) {
-  static const std::string function = __FUNCTION__;
+template<typename Tp>
+AgentStatus Model::LoadAgent(Tp& agent) {
+  AgentStatus stat = handler_.ActivateAgent<Tp>();
+  if (stat == AgentStatus::kOk) {
+    agent = builder_.BuildAgent<Tp>();
+  }
+  return stat;
+}
+
+AgentResponse Model::SetConfig(const std::string& config_path) {
+  constexpr const char name[] = "config";
   auto[ok, conf] = ConfigParser::ParseFromFile(config_path);
   if (!ok) {
-    Logger::LogAll(function + kFail + std::to_string(__LINE__) + kFilePath,
-                   kCpuLogPath, kMemoryLogPath, kNetworkPath);
-    return AgentStatus::kNotLoaded;
+    return {AgentStatus::kNotLoaded, name} ;
   }
   config_ = std::move(conf);
-  Logger::LogAll(function + kSuccess + std::to_string(__LINE__) + kFilePath,
-                 kCpuLogPath, kMemoryLogPath, kNetworkPath);
-  return AgentStatus::kOk;
+  return {AgentStatus::kOk, name};
 }
 
-AgentStatus Model::LoadCpuAgent() noexcept {
-  executed_agent_name_ = "cpu_agent";
-  if (auto stat = handler_.ActivateCpuAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kCpuLogPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+Model::Model() noexcept : builder_(&handler_) {}
+
+
+AgentResponse Model::LoadCpuAgent() noexcept {
+  return {LoadAgent(cpu_agent_), kCpuAgentName};
+}
+
+AgentResponse Model::LoadMemoryAgent() noexcept {
+  return {LoadAgent(memory_agent_), kMemoryAgentName};
+}
+
+AgentResponse Model::LoadNetworkAgent() noexcept {
+  return {LoadAgent(network_agent_), kNetworkAgentName};
+}
+
+AgentResponse Model::UnloadCpuAgent() noexcept {
+  return {handler_.DeactivateAgent<agents::CPU>(), kCpuAgentName};
+}
+
+AgentResponse Model::UnloadMemoryAgent() noexcept {
+  return {handler_.DeactivateAgent<agents::Memory>(), kNetworkAgentName};
+}
+
+AgentResponse Model::UnloadNetworkAgent() noexcept {
+  return {handler_.DeactivateAgent<agents::Network>(), kNetworkAgentName};
+}
+
+MetricResponse Model::UpdateMetrics() {
+  std::mutex m;
+  std::condition_variable cv;
+  std::atomic<bool> state = false;
+  std::unique_lock<std::mutex> lock(m);
+  {
+    auto [val, response] = ExecuteAgent(cpu_agent_.cpu_load, "cpu_load");
+    cpu_load_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  cpu_agent_ = builder_.BuildCpuAgent();
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  return AgentStatus::kOk;
-}
-
-AgentStatus Model::LoadMemoryAgent() noexcept {
-  executed_agent_name_ = "memory_agent";
-  if (auto stat = handler_.ActivateMemoryAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kMemoryLogPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+  {
+    auto [val, response] = ExecuteAgent(cpu_agent_.cpu_process, "cpu_process");
+    cpu_processes_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  memory_agent_ = builder_.BuildMemoryAgent();
-  return AgentStatus::kOk;
-}
-
-AgentStatus Model::LoadNetworkAgent() noexcept {
-  executed_agent_name_ = "network_agent";
-  if (auto stat = handler_.ActivateNetworkAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kNetworkPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+  {
+    auto [val, response] = ExecuteAgent(memory_agent_.ram_total, "ram_total");
+    ram_total_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  network_agent_ = builder_.BuildNetworkAgent();
-  Logger::Log(kNetworkPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  return AgentStatus::kOk;
-}
-
-AgentStatus Model::UnloadCpuAgent() noexcept {
-  executed_agent_name_ = "cpu_agent";
-  if (auto stat = handler_.DeactivateCpuAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kCpuLogPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+  {
+    auto [val, response] = ExecuteAgent(memory_agent_.ram, "ram");
+    ram_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  return AgentStatus::kOk;
-}
-
-AgentStatus Model::UnloadMemoryAgent() noexcept {
-  executed_agent_name_ = "memory_agent";
-  if (auto stat = handler_.DeactivateMemoryAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kMemoryLogPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+  {
+    auto [val, response] = ExecuteAgent(memory_agent_.hard_ops, "hard_ops");
+    hard_ops_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  return AgentStatus::kOk;
-}
-
-AgentStatus Model::UnloadNetworkAgent() noexcept {
-  executed_agent_name_ = "network_agent";
-  if (auto stat = handler_.DeactivateNetworkAgent(); stat != AgentStatus::kOk) {
-    Logger::Log(kNetworkPath) << __FUNCTION__ << kFail << __LINE__ << kFilePath << Logger::endlog;
-    return stat;
+  {
+    auto [val, response] = ExecuteAgent(memory_agent_.hard_volume, "hard_volume");
+    hard_volume_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
   }
-  Logger::Log(kNetworkPath) << __FUNCTION__ << kSuccess << __LINE__ << kFilePath << Logger::endlog;
-  return AgentStatus::kOk;
+  {
+    auto [val, response] = ExecuteAgent(memory_agent_.hard_throughput, "hard_throughput");
+    hard_throughput_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
+  }
+  {
+    std::string url = GetUrl(config_["url"].type);
+    auto url_callback = std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1);
+    auto [val, response] = ExecuteAgent(url_callback, "url");
+    url_available_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
+  }
+  {
+    auto [val, response] = ExecuteAgent(network_agent_.inet_throughput, "inet_throughput");
+    inet_throughput_ = val;
+    if (response.status != MetricStatus::kOk) {
+      return response;
+    }
+  }
+  return {
+    .status = MetricStatus::kOk,
+    .name = "",
+    .type = ""
+  };
 }
 
-template<typename Callback>
-inline auto Model::ExecuteAgent(Callback callback) {
-  MetricConfig metric = config_[executed_agent_type_];
-  auto val = callback(metric.timeout);
-  return RangeBoundsCheck(val, metric.range);
+double Model::CpuLoad() noexcept {
+  return cpu_load_;
 }
 
-std::pair<MetricStatus, double> Model::CpuLoad() {
-  executed_agent_name_ = "cpu_agent";
-  executed_agent_type_ = "cpu_load";
-  auto res = ExecuteAgent(cpu_agent_.cpu_load);
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+size_t Model::CpuProcesses() noexcept {
+  return cpu_processes_;
 }
 
-std::pair<MetricStatus, size_t> Model::CpuProcesses() {
-  executed_agent_name_ = "cpu_agent";
-  executed_agent_type_ = "processes";
-  auto res = ExecuteAgent(cpu_agent_.cpu_process);
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+double Model::RamTotal() noexcept {
+  return ram_total_;
 }
 
-std::pair<MetricStatus, double> Model::RamTotal() {
-  executed_agent_name_ = "memory_agent";
-  executed_agent_type_ = "ram_total";
-  auto res = ExecuteAgent(memory_agent_.ram_total);
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+double Model::Ram() noexcept {
+  return ram_;
 }
 
-std::pair<MetricStatus, double> Model::Ram() {
-  executed_agent_name_ = "memory_agent";
-  executed_agent_type_ = "ram";
-  auto res = ExecuteAgent(memory_agent_.ram);
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+double Model::HardVolume() noexcept {
+  return hard_volume_;
 }
 
-std::pair<MetricStatus, double> Model::HardVolume() {
-  executed_agent_name_ = "memory_agent";
-  executed_agent_type_ = "hard_volume";
-  auto res = ExecuteAgent(memory_agent_.hard_volume);
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+size_t Model::HardOps() noexcept {
+  return hard_ops_;
 }
 
-std::pair<MetricStatus, size_t> Model::HardOps() {
-  executed_agent_name_ = "memory_agent";
-  executed_agent_type_ = "hard_ops";
-  auto res = ExecuteAgent(memory_agent_.hard_ops);
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+double Model::HardThroughput() noexcept {
+  return hard_throughput_;
 }
 
-std::pair<MetricStatus, double> Model::HardThroughput() {
-  executed_agent_name_ = "memory_agent";
-  executed_agent_type_ = "hard_throughput";
-  auto res = ExecuteAgent(memory_agent_.hard_throughput);
-  Logger::Log(kMemoryLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
+int Model::UrlAvailable() noexcept {
+  return url_available_;
 }
 
-std::pair<MetricStatus, int> Model::UrlAvailable() {
-  executed_agent_name_ = "network_agent";
-  executed_agent_type_ = "url";
-  std::string url = GetUrl(config_[executed_agent_type_].type);
-  auto res = ExecuteAgent(std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1));
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
-}
-
-std::pair<MetricStatus, double> Model::InetThroughput() {
-  executed_agent_name_ = "network_agent";
-  executed_agent_type_ = "inet_throughput";
-  auto res = ExecuteAgent(network_agent_.inet_throughput);
-  Logger::Log(kCpuLogPath) << __FUNCTION__ << GetMetricStatusString(res.first) << __LINE__ << kFilePath << Logger::endlog;
-  return res;
-}
-
-const std::string& Model::ExecutedAgentType() noexcept {
-  return executed_agent_name_;
-}
-
-const std::string& Model::ExecutedAgentName() noexcept {
-  return executed_agent_type_;
+double Model::InetThroughput() noexcept {
+  return inet_throughput_;
 }
 
 void Model::Reset() noexcept {
-  handler_.DeactivateCpuAgent();
-  handler_.DeactivateMemoryAgent();
-  handler_.DeactivateNetworkAgent();
+  handler_.DeactivateAgent<agents::CPU>();
+  handler_.DeactivateAgent<agents::Memory>();
+  handler_.DeactivateAgent<agents::Network>();
 
   cpu_agent_ = {};
   memory_agent_ = {};

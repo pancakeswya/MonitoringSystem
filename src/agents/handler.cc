@@ -1,5 +1,4 @@
 #include "agents/handler.h"
-#include "base/paths.h"
 
 #include <dlfcn.h>
 
@@ -7,9 +6,17 @@ namespace monsys::agents {
 
 constexpr int kDlFlag = RTLD_LAZY;
 
-namespace {
+Handler::Handler() noexcept: handle_cpu_(),
+                             handle_memory_(),
+                             handle_network_() {}
 
-inline AgentStatus ActivateAgent(void* &handle, const char* path) noexcept {
+Handler::~Handler() {
+  DeactivateAgent<agents::CPU>();
+  DeactivateAgent<agents::Memory>();
+  DeactivateAgent<agents::Network>();
+}
+
+AgentStatus Handler::ActivateAgent(void* &handle, const char* path) noexcept {
   if (handle) {
     return AgentStatus::kAlreadyActive;
   }
@@ -20,49 +27,13 @@ inline AgentStatus ActivateAgent(void* &handle, const char* path) noexcept {
   return AgentStatus::kOk;
 }
 
-inline AgentStatus DeactivateAgent(void* &handle) noexcept {
+AgentStatus Handler::DeactivateAgent(void* &handle) noexcept {
   if (!handle) {
     return AgentStatus::kInvalidDeactivate;
   }
   dlclose(handle);
   handle = nullptr;
   return AgentStatus::kOk;
-}
-
-} // namespace
-
-Handler::Handler() noexcept: handle_cpu_(),
-                             handle_memory_(),
-                             handle_network_() {}
-
-Handler::~Handler() {
-  DeactivateCpuAgent();
-  DeactivateMemoryAgent();
-  DeactivateNetworkAgent();
-}
-
-AgentStatus Handler::ActivateCpuAgent() noexcept {
-  return ActivateAgent(handle_cpu_, kAgentCpuPath.data());
-}
-
-AgentStatus Handler::ActivateMemoryAgent() noexcept {
-  return ActivateAgent(handle_memory_, kAgentMemoryPath.data());
-}
-
-AgentStatus Handler::ActivateNetworkAgent() noexcept {
-  return ActivateAgent(handle_network_, kAgentNetworkPath.data());
-}
-
-AgentStatus Handler::DeactivateCpuAgent() noexcept {
-  return DeactivateAgent(handle_cpu_);
-}
-
-AgentStatus Handler::DeactivateMemoryAgent() noexcept {
-  return DeactivateAgent(handle_memory_);
-}
-
-AgentStatus Handler::DeactivateNetworkAgent() noexcept {
-  return DeactivateAgent(handle_network_);
 }
 
 } // namespace monsys::agents

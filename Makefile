@@ -15,9 +15,10 @@ AGENTSCORELIB_MEMORY_PATH := $(AGENTSCORELIB_DIR)/libAgent_MEMORY
 AGENTSCORELIB_NETWORK_PATH := $(AGENTSCORELIB_DIR)/libAgent_NETWORK
 
 ifeq ($(OS), Linux)
+DEPENDENCIES   := libcurl4-openssl-dev
 AGENTSLIB_PATH := $(addsuffix .so, $(AGENTSCORELIB_CPU_PATH) $(AGENTSCORELIB_MEMORY_PATH) $(AGENTSCORELIB_NETWORK_PATH))
-OPEN         := xdg-open
-RUN          := ./$(BUILD_DIR)/$(APP)
+OPEN           := xdg-open
+RUN            := ./$(BUILD_DIR)/$(APP)
 else ifeq ($(OS), Darwin)
 AGENTSLIB_PATH := $(addsuffix .dylib, $(AGENTSCORELIB_CPU_PATH) $(AGENTSCORELIB_MEMORY_PATH) $(AGENTSCORELIB_NETWORK_PATH))
 OPEN         := open

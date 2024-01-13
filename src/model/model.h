@@ -17,47 +17,58 @@ class Model {
  public:
   Model() noexcept;
 
-  AgentStatus LoadCpuAgent() noexcept;
-  AgentStatus LoadMemoryAgent() noexcept;
-  AgentStatus LoadNetworkAgent() noexcept;
+  AgentResponse LoadCpuAgent() noexcept;
+  AgentResponse LoadMemoryAgent() noexcept;
+  AgentResponse LoadNetworkAgent() noexcept;
 
-  AgentStatus UnloadCpuAgent() noexcept;
-  AgentStatus UnloadMemoryAgent() noexcept;
-  AgentStatus UnloadNetworkAgent() noexcept;
+  AgentResponse UnloadCpuAgent() noexcept;
+  AgentResponse UnloadMemoryAgent() noexcept;
+  AgentResponse UnloadNetworkAgent() noexcept;
 
-  AgentStatus SetConfig(const std::string& config_path);
+  AgentResponse SetConfig(const std::string& config_path);
 
-  std::pair<MetricStatus, double> CpuLoad();
-  std::pair<MetricStatus, size_t> CpuProcesses();
+  MetricResponse UpdateMetrics();
 
-  std::pair<MetricStatus, double> RamTotal();
-  std::pair<MetricStatus, double> Ram();
-  std::pair<MetricStatus, double> HardVolume();
-  std::pair<MetricStatus, size_t> HardOps();
-  std::pair<MetricStatus, double> HardThroughput();
+  double CpuLoad() noexcept;
+  size_t CpuProcesses() noexcept;
 
-  std::pair<MetricStatus, double> InetThroughput();
-  std::pair<MetricStatus, int> UrlAvailable();
+  double RamTotal() noexcept;
+  double Ram() noexcept;
+  double HardVolume() noexcept;
+  size_t HardOps() noexcept;
+  double HardThroughput() noexcept;
 
-  const std::string& ExecutedAgentType() noexcept;
-  const std::string& ExecutedAgentName() noexcept;
+  double InetThroughput() noexcept;
+  int UrlAvailable() noexcept;
 
   void Reset() noexcept;
  private:
   template<typename Callback>
-  auto ExecuteAgent(Callback callback);
+  auto ExecuteAgent(Callback callback, const char* name);
+
+  template<typename Tp>
+  AgentStatus LoadAgent(Tp& agent);
 
   agents::Builder builder_;
   agents::Handler handler_;
 
-  agents::CPU cpu_agent_;
-  agents::Memory memory_agent_;
-  agents::Network network_agent_;
+  agents::CPU cpu_agent_{};
+  agents::Memory memory_agent_{};
+  agents::Network network_agent_{};
 
-  std::string executed_agent_name_;
-  std::string executed_agent_type_;
+  double cpu_load_{};
+  size_t cpu_processes_{};
 
-  SystemConfig config_;
+  double ram_total_{};
+  double ram_{};
+  double hard_volume_{};
+  size_t hard_ops_{};
+  double hard_throughput_{};
+
+  double inet_throughput_{};
+  int url_available_{};
+
+  SystemConfig config_{};
 };
 
 } // namespace monsys

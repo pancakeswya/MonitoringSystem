@@ -24,6 +24,8 @@ class Controller {
 
   bool SetConfig(const std::string& config_path);
 
+  void UpdateMetrics();
+
   double CpuLoad();
   size_t CpuProcesses();
   double RamTotal();
@@ -40,9 +42,6 @@ class Controller {
  private:
   template<typename Callback>
   bool HandleAgent(Callback callback) noexcept;
-
-  template<typename Callback, typename return_type = typename Callback::second_type>
-  return_type HandleMetric(Callback callback) noexcept;
 
   Model* model_;
   OnExceptionCallback exc_callback_{};
