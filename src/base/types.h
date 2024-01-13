@@ -6,8 +6,8 @@
 namespace monsys {
 
 constexpr const char kCpuAgentName[] = "cpu_agent",
-    kMemoryAgentName[] = "memory_agent",
-    kNetworkAgentName[] = "network_agent";
+                     kMemoryAgentName[] = "memory_agent",
+                     kNetworkAgentName[] = "network_agent";
 
 enum class AgentStatus : unsigned char {
   kOk,

@@ -1,11 +1,9 @@
 #include "model/model.h"
 #include "model/config_parser.h"
 
-#include <condition_variable>
-#include <atomic>
-#include <memory>
-#include <mutex>
-#include <unordered_map>
+#include <thread>
+#include <vector>
+#include <iostream>
 
 namespace monsys {
 
@@ -88,81 +86,83 @@ AgentResponse Model::UnloadNetworkAgent() noexcept {
   return {handler_.DeactivateAgent<agents::Network>(), kNetworkAgentName};
 }
 
-MetricResponse Model::UpdateMetrics() {
-  std::mutex m;
-  std::condition_variable cv;
-  std::atomic<bool> state = false;
-  std::unique_lock<std::mutex> lock(m);
-  {
-    auto [val, response] = ExecuteAgent(cpu_agent_.cpu_load, "cpu_load");
-    cpu_load_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
+std::vector<MetricResponse> Model::UpdateMetrics() {
+  std::vector<MetricResponse> responses(agents::kAgentsAmount,
+                                        MetricResponse{
+                                          .status = MetricStatus::kOk,
+                                          .name = "",
+                                          .type = ""
+                                        }
+  );
+  std::vector<std::thread> threads;
+
+  if (handler_.AgentIsActive<agents::CPU>()) {
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(cpu_agent_.cpu_load, "cpu_load");
+      cpu_load_ = val;
+      responses[0] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(cpu_agent_.cpu_process, "cpu_process");
+      cpu_processes_ = val;
+      responses[1] = std::move(response);
+    });
   }
-  {
-    auto [val, response] = ExecuteAgent(cpu_agent_.cpu_process, "cpu_process");
-    cpu_processes_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
+
+  if (handler_.AgentIsActive<agents::Memory>()) {
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(memory_agent_.ram_total, "ram_total");
+      ram_total_ = val;
+      responses[2] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(memory_agent_.ram, "ram");
+      ram_ = val;
+      responses[3] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(memory_agent_.hard_ops, "hard_ops");
+      hard_ops_ = val;
+      responses[4] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(memory_agent_.hard_volume, "hard_volume");
+      hard_volume_ = val;
+      responses[5] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(memory_agent_.hard_throughput, "hard_throughput");
+      hard_throughput_ = val;
+      responses[6] = std::move(response);
+    });
   }
-  {
-    auto [val, response] = ExecuteAgent(memory_agent_.ram_total, "ram_total");
-    ram_total_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
+
+  if (handler_.AgentIsActive<agents::Network>()) {
+    threads.emplace_back([&]() {
+      std::string url = GetUrl(config_["url"].type);
+      auto url_callback = std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1);
+      auto [val, response] = ExecuteAgent(url_callback, "url");
+      url_available_ = val;
+      responses[7] = std::move(response);
+    });
+
+    threads.emplace_back([&]() {
+      auto [val, response] = ExecuteAgent(network_agent_.inet_throughput, "inet_throughput");
+      inet_throughput_ = val;
+      responses[8] = std::move(response);
+    });
   }
-  {
-    auto [val, response] = ExecuteAgent(memory_agent_.ram, "ram");
-    ram_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
+
+  for(std::thread& thread : threads) {
+    thread.join();
   }
-  {
-    auto [val, response] = ExecuteAgent(memory_agent_.hard_ops, "hard_ops");
-    hard_ops_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
-  }
-  {
-    auto [val, response] = ExecuteAgent(memory_agent_.hard_volume, "hard_volume");
-    hard_volume_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
-  }
-  {
-    auto [val, response] = ExecuteAgent(memory_agent_.hard_throughput, "hard_throughput");
-    hard_throughput_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
-  }
-  {
-    std::string url = GetUrl(config_["url"].type);
-    auto url_callback = std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1);
-    auto [val, response] = ExecuteAgent(url_callback, "url");
-    url_available_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
-  }
-  {
-    auto [val, response] = ExecuteAgent(network_agent_.inet_throughput, "inet_throughput");
-    inet_throughput_ = val;
-    if (response.status != MetricStatus::kOk) {
-      return response;
-    }
-  }
-  return {
-    .status = MetricStatus::kOk,
-    .name = "",
-    .type = ""
-  };
+
+  return responses;
 }
 
 double Model::CpuLoad() noexcept {

@@ -8,6 +8,7 @@
 #include "model/config.h"
 
 #include <functional>
+#include <vector>
 #include <string>
 #include <utility>
 
@@ -27,7 +28,7 @@ class Model {
 
   AgentResponse SetConfig(const std::string& config_path);
 
-  MetricResponse UpdateMetrics();
+  std::vector<MetricResponse> UpdateMetrics();
 
   double CpuLoad() noexcept;
   size_t CpuProcesses() noexcept;

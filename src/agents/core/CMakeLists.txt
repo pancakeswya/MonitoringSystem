@@ -6,6 +6,8 @@ include_directories("../..")
 
 find_package(CURL REQUIRED)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -O3")
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CORE_SRC macos)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")

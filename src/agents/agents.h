@@ -19,6 +19,8 @@ using HardThroughputCallback = typeof(&HardThroughput);
 using UrlAvailableCallback = typeof(&UrlAvailable);
 using InetThroughputCallback = typeof(&InetThroughput);
 
+constexpr size_t kAgentsAmount = 9;
+
 struct CPU {
   CpuLoadCallback cpu_load;
   CpuProcessCallback cpu_process;

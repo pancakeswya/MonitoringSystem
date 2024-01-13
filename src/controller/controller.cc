@@ -46,11 +46,13 @@ void Controller::UnloadNetworkAgent() noexcept {
 }
 
 void Controller::UpdateMetrics() {
-  MetricResponse response = model_->UpdateMetrics();
-  if (response.status != MetricStatus::kOk) {
-    exc_callback_("Agent name: " + response.name +
-                  "\nAgent type: " + response.type +
-                  "\nError: " + GetStatusString(response.status));
+  std::vector<MetricResponse> responses = model_->UpdateMetrics();
+  for(const MetricResponse& response : responses) {
+    if (response.status != MetricStatus::kOk) {
+      exc_callback_("Agent name: " + response.name +
+                    "\nAgent type: " + response.type +
+                    "\nError: " + GetStatusString(response.status));
+    }
   }
 }
 

@@ -44,7 +44,7 @@ double Ram(unsigned int delay) {
 
   size_t bytes = BUFFER_SIZE;
 
-  double total, used;
+  double total = 0.0, used = 0.0;
 
   const size_t mem_total_len = strlen("MemTotal:"),
                mem_free_len = strlen("MemFree:"),
