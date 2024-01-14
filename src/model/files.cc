@@ -1,10 +1,9 @@
-#include "model/config_parser.h"
+#include "model/files.h"
 
+#include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <unordered_map>
 
-namespace monsys::ConfigParser {
+namespace monsys::files {
 
 namespace {
 
@@ -14,7 +13,6 @@ size_t SkipSpace(const std::string& str) noexcept {
     ;
   return i;
 }
-
 
 size_t SkipAlpha(const std::string& str) noexcept {
   size_t i = 0;
@@ -42,7 +40,21 @@ inline SystemConfig DefaultConfig() noexcept {
 
 } // namespace
 
-std::pair<bool, SystemConfig> ParseFromFile(const std::string& path) {
+void CreateDirectory(const std::string& path) {
+  if (!std::filesystem::exists(path)) {
+    std::filesystem::create_directory(path);
+  }
+}
+
+std::vector<std::string> GetFileList(const std::string& path) {
+  std::vector<std::string> file_list;
+  for (const auto& entry : std::filesystem::directory_iterator(path)) {
+    file_list.push_back(entry.path().filename());
+  }
+  return file_list;
+}
+
+std::pair<bool, SystemConfig> ParseConfig(const std::string& path) {
   SystemConfig config = DefaultConfig();
   std::ifstream input(path.data(), std::ifstream::binary);
   if (!input.is_open()) {

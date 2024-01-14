@@ -1,10 +1,9 @@
 #include "model/model.h"
-#include "model/config_parser.h"
+#include "model/files.h"
 #include "base/logger.h"
 
 #include <thread>
 #include <vector>
-#include <filesystem>
 
 namespace monsys {
 
@@ -79,7 +78,7 @@ void Model::LogMetrics(size_t delay) {
 
 AgentResponse Model::SetConfig(const std::string& config_path) {
   constexpr const char name[] = "config";
-  auto[ok, conf] = ConfigParser::ParseFromFile(config_path);
+  auto[ok, conf] = files::ParseConfig(config_path);
   if (!ok) {
     return {AgentStatus::kNotLoaded, name} ;
   }
@@ -93,9 +92,7 @@ AgentResponse Model::SetConfig(const std::string& config_path) {
 
 Model::Model() noexcept : state_(ModelState::kIoFree),
                           builder_(&handler_) {
-  if (!std::filesystem::exists(kLogsPath)) {
-    std::filesystem::create_directory(kLogsPath);
-  }
+  files::CreateDirectory(kLogsPath);
 }
 
 Model::~Model() {

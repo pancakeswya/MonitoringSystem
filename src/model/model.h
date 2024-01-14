@@ -65,7 +65,7 @@ class Model {
   agents::Memory memory_agent_{};
   agents::Network network_agent_{};
 
-  Metrics metrics_;
+  Metrics metrics_{};
 
   SystemConfig config_{};
 };

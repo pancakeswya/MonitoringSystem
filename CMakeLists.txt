@@ -25,15 +25,15 @@ add_library(AgentsBuilder STATIC
         ${SRC_DIR}/agents/builder.cc
         ${SRC_DIR}/agents/builder.h)
 
-add_library(ConfigParser STATIC
-        ${SRC_DIR}/model/config_parser.cc
-        ${SRC_DIR}/model/config_parser.h)
+add_library(Files STATIC
+        ${SRC_DIR}/model/files.cc
+        ${SRC_DIR}/model/files.h)
 
 add_library(Model STATIC
         ${SRC_DIR}/model/model.cc
         ${SRC_DIR}/model/model.h)
 
-target_link_libraries(Model AgentsHandler AgentsBuilder ConfigParser)
+target_link_libraries(Model AgentsHandler AgentsBuilder Files)
 
 add_library(Controller STATIC
         ${SRC_DIR}/controller/controller.cc
