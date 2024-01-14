@@ -38,6 +38,13 @@ class Model {
 
   void Reset() noexcept;
  private:
+  enum class ModelState {
+    kIoBusy,
+    kIoFree,
+    kAboutToDestroy,
+    kStoppedLogger
+  };
+
   template<typename Callback>
   auto ExecuteAgent(Callback callback, const char* name);
 
@@ -45,13 +52,6 @@ class Model {
   AgentStatus LoadAgent(Tp& agent);
 
   void LogMetrics(size_t delay);
-
-  enum class ModelState {
-    kIoBusy,
-    kIoFree,
-    kAboutToDestroy,
-    kStoppedLogger
-  };
 
   std::atomic<ModelState> state_;
 

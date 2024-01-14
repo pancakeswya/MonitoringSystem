@@ -53,15 +53,17 @@ AgentStatus Model::LoadAgent(Tp& agent) {
 void Model::LogMetrics(size_t delay) {
   for(;;) {
     std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait_for(lock, std::chrono::milliseconds(delay), [&] { return state_.load() == ModelState::kAboutToDestroy; } );
-    if (state_.load() == ModelState::kAboutToDestroy) {
-      state_.store(ModelState::kStoppedLogger);
+    bool about_to_destroy = cv_.wait_for(lock, std::chrono::milliseconds(delay),
+                                         [&state = state_] { return state == ModelState::kAboutToDestroy; } );
+    if (about_to_destroy) {
+      state_ = ModelState::kStoppedLogger;
       cv_.notify_all();
       return;
     }
-    cv_.wait(lock, [&] { return state_.load() == ModelState::kIoFree; });
 
-    state_.store(ModelState::kIoBusy);
+    cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+
+    state_ = ModelState::kIoBusy;
     cv_.notify_all();
 
     Logger::Log() << "cpu_load" << metrics_.cpu_load << "cpu_processes" << metrics_.cpu_processes
@@ -70,7 +72,7 @@ void Model::LogMetrics(size_t delay) {
                   << "url_available" << metrics_.url_available << "inet_throughput" << metrics_.inet_throughput
                   << Logger::endlog;
 
-    state_.store(ModelState::kIoFree);
+    state_ = ModelState::kIoFree;
     cv_.notify_all();
   }
 }
@@ -98,10 +100,10 @@ Model::Model() noexcept : state_(ModelState::kIoFree),
 
 Model::~Model() {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&] { return state_.load() == ModelState::kIoFree; });
-  state_.store(ModelState::kAboutToDestroy);
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+  state_ = ModelState::kAboutToDestroy;
   cv_.notify_all();
-  cv_.wait(lock, [&] { return state_.load() == ModelState::kStoppedLogger; });
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kStoppedLogger; });
 }
 
 AgentResponse Model::LoadCpuAgent() noexcept {
@@ -130,9 +132,9 @@ AgentResponse Model::UnloadNetworkAgent() noexcept {
 
 std::vector<MetricResponse> Model::UpdateMetrics() {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&] { return state_ == ModelState::kIoFree; });
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
 
-  state_.store(ModelState::kIoBusy);
+  state_ = ModelState::kIoBusy;
   cv_.notify_all();
 
   std::vector<MetricResponse> responses(agents::kAgentsAmount,
@@ -210,7 +212,7 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
     thread.join();
   }
 
-  state_.store(ModelState::kIoFree);
+  state_ = ModelState::kIoFree;
   cv_.notify_all();
 
   return responses;
@@ -218,14 +220,14 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
 
 Metrics Model::GetMetrics() noexcept {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&] { return state_ == ModelState::kIoFree; });
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
 
-  state_.store(ModelState::kIoBusy);
+  state_ = ModelState::kIoBusy;
   cv_.notify_all();
 
   Metrics metrics = metrics_;
 
-  state_.store(ModelState::kIoFree);
+  state_ = ModelState::kIoFree;
   cv_.notify_all();
 
   return metrics;
