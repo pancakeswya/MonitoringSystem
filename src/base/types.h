@@ -33,6 +33,20 @@ struct MetricResponse {
   std::string type;
 };
 
+struct Metrics {
+  double cpu_load;
+  size_t cpu_processes;
+
+  double ram_total;
+  double ram;
+  double hard_volume;
+  size_t hard_ops;
+  double hard_throughput;
+
+  double inet_throughput;
+  int url_available;
+};
+
 std::string GetStatusString(AgentStatus status);
 std::string GetStatusString(MetricStatus status);
 

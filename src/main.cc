@@ -23,25 +23,28 @@ int main() {
 
   controller.UpdateMetrics();
 
+
   if (!loaded) {
     return 1;
   }
 
-  std::cout << "cpu load: " << controller.CpuLoad() << std::endl;
-  std::cout << "cpu processes: " << controller.CpuProcesses() << std::endl;
+  auto metrics = controller.GetMetrics();
+
+  std::cout << "cpu load: " << metrics.cpu_load << std::endl;
+  std::cout << "cpu processes: " << metrics.cpu_processes << std::endl;
 
   controller.UnloadCpuAgent();
 
-  std::cout << "ram total: " << controller.RamTotal() << std::endl;
-  std::cout << "ram: " << controller.Ram() << std::endl;
-  std::cout << "hard ops: " << controller.HardOps() << std::endl;
-  std::cout << "hard volume: " << controller.HardVolume() << std::endl;
-  std::cout << "hard throughput: " << controller.HardThroughput() << std::endl;
+  std::cout << "ram total: " << metrics.ram_total << std::endl;
+  std::cout << "ram: " << metrics.ram << std::endl;
+  std::cout << "hard ops: " << metrics.hard_ops << std::endl;
+  std::cout << "hard volume: " << metrics.hard_volume << std::endl;
+  std::cout << "hard throughput: " << metrics.hard_throughput << std::endl;
 
   controller.UnloadMemoryAgent();
 
-  std::cout << "url available: " << controller.UrlAvailable() << std::endl;
-  std::cout << "inet throughput: " << controller.InetThroughput() << std::endl;
+  std::cout << "url available: " << metrics.url_available << std::endl;
+  std::cout << "inet throughput: " << metrics.inet_throughput << std::endl;
 
   controller.UnloadNetworkAgent();
 

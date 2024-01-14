@@ -56,44 +56,12 @@ void Controller::UpdateMetrics() {
   }
 }
 
+Metrics Controller::GetMetrics() noexcept {
+  return model_->GetMetrics();
+}
+
 bool Controller::SetConfig(const std::string& config_path) {
   return HandleAgent(model_->SetConfig(config_path));
-}
-
-double Controller::CpuLoad() {
-  return model_->CpuLoad();
-}
-
-size_t Controller::CpuProcesses() {
-  return model_->CpuProcesses();
-}
-
-double Controller::RamTotal() {
-  return model_->RamTotal();
-}
-
-double Controller::Ram() {
-  return model_->Ram();
-}
-
-double Controller::HardVolume() {
-  return model_->HardVolume();
-}
-
-size_t Controller::HardOps() {
-  return model_->HardOps();
-}
-
-double Controller::HardThroughput() {
-  return model_->HardThroughput();
-}
-
-double Controller::InetThroughput() {
-  return model_->InetThroughput();
-}
-
-int Controller::UrlAvailable() {
-  return model_->UrlAvailable();
 }
 
 void Controller::OnException(Controller::OnExceptionCallback callback) {
@@ -103,6 +71,5 @@ void Controller::OnException(Controller::OnExceptionCallback callback) {
 void Controller::Reset() noexcept {
   model_->Reset();
 }
-
 
 } // namespace monsys

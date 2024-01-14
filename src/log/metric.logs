@@ -1,0 +1,4 @@
+[2024-01-14 20:16:06] | cpu_load : 3.78788 || cpu_processes : 28226 || ram : 37.0954 || ram_total : 3768.81 || hard_ops : 11 || hard_volume : 72.1239 || hard_throughput : 45056 || url_available : 0 || inet_throughput : 0 |
+[2024-01-14 20:16:26] | cpu_load : 0 || cpu_processes : 28369 || ram : 33.0408 || ram_total : 3768.81 || hard_ops : 11 || hard_volume : 72.1258 || hard_throughput : 45056 || url_available : 0 || inet_throughput : 0 |
+[2024-01-14 20:17:18]  cpu_load : 0.505051 | cpu_processes : 28513 | ram : 35.4268 | ram_total : 3768.81 | hard_ops : 11 | hard_volume : 72.1258 | hard_throughput : 45056 | url_available : 0 | inet_throughput : 0 |
+[2024-01-14 20:18:08] | cpu_load : 0 | cpu_processes : 28657 | ram : 35.0284 | ram_total : 3768.81 | hard_ops : 11 | hard_volume : 72.1258 | hard_throughput : 45056 | url_available : 0 | inet_throughput : 0 

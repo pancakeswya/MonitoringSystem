@@ -3,10 +3,10 @@
 
 #include <string>
 #include <functional>
-
 namespace monsys {
 
 class Model;
+struct Metrics;
 
 class Controller {
  public:
@@ -26,15 +26,7 @@ class Controller {
 
   void UpdateMetrics();
 
-  double CpuLoad();
-  size_t CpuProcesses();
-  double RamTotal();
-  double Ram();
-  double HardVolume();
-  size_t HardOps();
-  double HardThroughput();
-  double InetThroughput();
-  int UrlAvailable();
+  Metrics GetMetrics() noexcept;
 
   void OnException(OnExceptionCallback);
   void Reset() noexcept;

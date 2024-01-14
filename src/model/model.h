@@ -7,6 +7,9 @@
 #include "base/types.h"
 #include "model/config.h"
 
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include <functional>
 #include <vector>
 #include <string>
@@ -17,6 +20,7 @@ namespace monsys {
 class Model {
  public:
   Model() noexcept;
+  ~Model();
 
   AgentResponse LoadCpuAgent() noexcept;
   AgentResponse LoadMemoryAgent() noexcept;
@@ -30,17 +34,7 @@ class Model {
 
   std::vector<MetricResponse> UpdateMetrics();
 
-  double CpuLoad() noexcept;
-  size_t CpuProcesses() noexcept;
-
-  double RamTotal() noexcept;
-  double Ram() noexcept;
-  double HardVolume() noexcept;
-  size_t HardOps() noexcept;
-  double HardThroughput() noexcept;
-
-  double InetThroughput() noexcept;
-  int UrlAvailable() noexcept;
+  Metrics GetMetrics() noexcept;
 
   void Reset() noexcept;
  private:
@@ -50,6 +44,20 @@ class Model {
   template<typename Tp>
   AgentStatus LoadAgent(Tp& agent);
 
+  void LogMetrics(size_t delay);
+
+  enum class ModelState {
+    kIoBusy,
+    kIoFree,
+    kAboutToDestroy,
+    kStoppedLogger
+  };
+
+  std::atomic<ModelState> state_;
+
+  std::mutex mutex_;
+  std::condition_variable cv_;
+
   agents::Builder builder_;
   agents::Handler handler_;
 
@@ -57,17 +65,7 @@ class Model {
   agents::Memory memory_agent_{};
   agents::Network network_agent_{};
 
-  double cpu_load_{};
-  size_t cpu_processes_{};
-
-  double ram_total_{};
-  double ram_{};
-  double hard_volume_{};
-  size_t hard_ops_{};
-  double hard_throughput_{};
-
-  double inet_throughput_{};
-  int url_available_{};
+  Metrics metrics_;
 
   SystemConfig config_{};
 };

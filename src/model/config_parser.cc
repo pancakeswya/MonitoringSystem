@@ -25,6 +25,7 @@ size_t SkipAlpha(const std::string& str) noexcept {
 
 inline SystemConfig DefaultConfig() noexcept {
   return SystemConfig {
+      {"logger", {}},
       {"cpu", {}},
       {"processes", {}},
       {"ram_total", {}},
@@ -53,17 +54,14 @@ std::pair<bool, SystemConfig> ParseFromFile(const std::string& path) {
     std::string field_name = line.substr(0, i++);
     i += SkipSpace(&line[i]);
     if (field_name == "name") {
-      last_name = line.substr(i);
+      last_name = line.substr(i, line.size() - i - 1);
+      continue;
     }
     if (last_name.empty()) {
       continue;
     }
     if (field_name == "type") {
-      size_t last_pos = i;
-      last_pos += SkipAlpha(&line[last_pos]);
-      last_pos += 1;
-      last_pos += SkipAlpha(&line[last_pos]);
-      config[last_name].type = line.substr(i, last_pos - i);
+      config[last_name].type = line.substr(i + 1, line.size() - i - 1);
     } else if (field_name == "range") {
       if (line[i] == '>') {
         config[last_name].range.first = std::strtod(&line[i + 1], nullptr);
@@ -77,7 +75,9 @@ std::pair<bool, SystemConfig> ParseFromFile(const std::string& path) {
     } else if (field_name == "timeout") {
       config[last_name].timeout = std::strtoul(&line[i], nullptr, 10);
     }
+
   }
+
   return {true, config};
 }
 
