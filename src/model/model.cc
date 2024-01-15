@@ -158,13 +158,13 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
   std::vector<std::thread> threads;
 
   if (handler_.AgentIsActive<agents::CPU>()) {
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(cpu_agent_.cpu_load, "cpu");
       metrics_.cpu_load = val;
       responses[0] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(cpu_agent_.cpu_process, "process");
       metrics_.cpu_processes = val;
       responses[1] = std::move(response);
