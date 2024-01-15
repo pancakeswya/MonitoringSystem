@@ -23,7 +23,7 @@ class Logger {
 
   template<typename Tp, typename = std::enable_if_t<std::is_arithmetic_v<Tp>, bool>>
   friend Logger& operator<<(Logger& logger, Tp val) {
-    logger.ofs_ << ": " << val << " ";
+    logger.ofs_ << ": " << val << ' ';
     return logger;
   }
 

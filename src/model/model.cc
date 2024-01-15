@@ -2,6 +2,7 @@
 #include "model/files.h"
 #include "base/logger.h"
 
+#include <cassert>
 #include <thread>
 #include <vector>
 
@@ -41,21 +42,22 @@ inline auto Model::ExecuteAgent(Callback callback, const char* name) {
 }
 
 template<typename Tp>
-AgentStatus Model::LoadAgent(Tp& agent) {
+inline AgentResponse Model::LoadAgent(Tp& agent, const char* name) {
   AgentStatus stat = handler_.ActivateAgent<Tp>();
   if (stat == AgentStatus::kOk) {
     agent = builder_.BuildAgent<Tp>();
   }
-  return stat;
+  Logger::Log() << "Agent" << name << "loaded with status" << GetStatusString(stat) << Logger::endlog;
+  return {stat, name};
 }
 
 void Model::LogMetrics(size_t delay) {
   for(;;) {
     std::unique_lock<std::mutex> lock(mutex_);
-    bool about_to_destroy = cv_.wait_for(lock, std::chrono::milliseconds(delay),
-                                         [&state = state_] { return state == ModelState::kAboutToDestroy; } );
-    if (about_to_destroy) {
-      state_ = ModelState::kStoppedLogger;
+    bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
+                                         [&state = state_] { return state == ModelState::kLoggerTerminate; } );
+    if (terminate) {
+      state_ = ModelState::kLoggerStopped;
       cv_.notify_all();
       return;
     }
@@ -76,6 +78,14 @@ void Model::LogMetrics(size_t delay) {
   }
 }
 
+inline void Model::TerminateLogger() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+  state_ = ModelState::kLoggerTerminate;
+  cv_.notify_all();
+  cv_.wait(lock, [&state = state_] { return state == ModelState::kLoggerStopped; });
+}
+
 AgentResponse Model::SetConfig(const std::string& config_path) {
   constexpr const char name[] = "config";
   auto[ok, conf] = files::ParseConfig(config_path);
@@ -84,35 +94,40 @@ AgentResponse Model::SetConfig(const std::string& config_path) {
   }
   config_ = std::move(conf);
 
+  if (log_thread_running_) {
+    TerminateLogger();
+  } else {
+    log_thread_running_ = true;
+  }
+
   std::thread log_thread(&Model::LogMetrics, this, config_["logger"].timeout);
   log_thread.detach();
 
   return {AgentStatus::kOk, name};
 }
 
-Model::Model() noexcept : state_(ModelState::kIoFree),
+Model::Model() noexcept : log_thread_running_(false),
+                          state_(ModelState::kIoFree),
                           builder_(&handler_) {
   files::CreateDirectory(kLogsPath);
 }
 
 Model::~Model() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
-  state_ = ModelState::kAboutToDestroy;
-  cv_.notify_all();
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kStoppedLogger; });
+  if (log_thread_running_) {
+    TerminateLogger();
+  }
 }
 
 AgentResponse Model::LoadCpuAgent() noexcept {
-  return {LoadAgent(cpu_agent_), kCpuAgentName};
+  return LoadAgent(cpu_agent_, kCpuAgentName);
 }
 
 AgentResponse Model::LoadMemoryAgent() noexcept {
-  return {LoadAgent(memory_agent_), kMemoryAgentName};
+  return LoadAgent(memory_agent_, kMemoryAgentName);
 }
 
 AgentResponse Model::LoadNetworkAgent() noexcept {
-  return {LoadAgent(network_agent_), kNetworkAgentName};
+  return LoadAgent(network_agent_, kNetworkAgentName);
 }
 
 AgentResponse Model::UnloadCpuAgent() noexcept {
@@ -158,31 +173,31 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
   }
 
   if (handler_.AgentIsActive<agents::Memory>()) {
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(memory_agent_.ram_total, "ram_total");
       metrics_.ram_total = val;
       responses[2] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(memory_agent_.ram, "ram");
       metrics_.ram = val;
       responses[3] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(memory_agent_.hard_ops, "hard_ops");
       metrics_.hard_ops = val;
       responses[4] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(memory_agent_.hard_volume, "hard_volume");
       metrics_.hard_volume = val;
       responses[5] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(memory_agent_.hard_throughput, "hard_throughput");
       metrics_.hard_throughput = val;
       responses[6] = std::move(response);
@@ -190,7 +205,7 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
   }
 
   if (handler_.AgentIsActive<agents::Network>()) {
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       std::string url = GetUrl(config_["url"].type);
       auto url_callback = std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1);
       auto [val, response] = ExecuteAgent(url_callback, "url");
@@ -198,7 +213,7 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
       responses[7] = std::move(response);
     });
 
-    threads.emplace_back([&]() {
+    threads.emplace_back([&] {
       auto [val, response] = ExecuteAgent(network_agent_.inet_throughput, "inet_throughput");
       metrics_.inet_throughput = val;
       responses[8] = std::move(response);

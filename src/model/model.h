@@ -41,18 +41,20 @@ class Model {
   enum class ModelState {
     kIoBusy,
     kIoFree,
-    kAboutToDestroy,
-    kStoppedLogger
+    kLoggerTerminate,
+    kLoggerStopped
   };
 
   template<typename Callback>
   auto ExecuteAgent(Callback callback, const char* name);
 
   template<typename Tp>
-  AgentStatus LoadAgent(Tp& agent);
+  AgentResponse LoadAgent(Tp& agent, const char* name);
 
   void LogMetrics(size_t delay);
+  void TerminateLogger();
 
+  bool log_thread_running_;
   std::atomic<ModelState> state_;
 
   std::mutex mutex_;

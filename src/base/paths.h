@@ -8,6 +8,7 @@
 
 namespace monsys {
 
+constexpr std::string_view kAgentLibPath = XSTRING(_CORELIB_PATH);
 constexpr std::string_view kAgentCpuPath = XSTRING(_CORELIB_CPU_PATH);
 constexpr std::string_view kAgentMemoryPath = XSTRING(_CORELIB_MEMORY_PATH);
 constexpr std::string_view kAgentNetworkPath = XSTRING(_CORELIB_NETWORK_PATH);

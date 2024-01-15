@@ -49,7 +49,7 @@ void CreateDirectory(const std::string& path) {
 std::vector<std::string> GetFileList(const std::string& path) {
   std::vector<std::string> file_list;
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
-    file_list.push_back(entry.path().filename());
+    file_list.push_back(entry.path().string());
   }
   return file_list;
 }
