@@ -2,7 +2,6 @@
 #include "model/files.h"
 #include "base/logger.h"
 
-#include <cassert>
 #include <thread>
 #include <vector>
 
@@ -36,8 +35,8 @@ inline auto Model::ExecuteAgent(Callback callback, const char* name) {
   auto[stat, res_val] = RangeBoundsCheck(curr_val, metric_config.range);
   return std::pair<decltype(res_val), MetricResponse>{res_val,
                                                       {.status = stat,
-                                                          .name = name,
-                                                          .type = metric_config.type
+                                                       .name = name,
+                                                       .type = metric_config.type
                                                       }};
 }
 
