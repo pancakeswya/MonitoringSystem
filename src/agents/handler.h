@@ -16,7 +16,7 @@ class Handler {
   AgentStatus ActivateAgent() noexcept;
 
   template<typename Tp>
-  AgentStatus DeactivateAgent() noexcept;
+  void DeactivateAgent() noexcept;
 
   template<typename Tp>
   bool AgentIsActive() noexcept;
@@ -25,7 +25,7 @@ class Handler {
   friend class Builder;
 
   static AgentStatus ActivateAgent(void* &handle, const char* path) noexcept;
-  static AgentStatus DeactivateAgent(void* &handle) noexcept;
+  static void DeactivateAgent(void* &handle) noexcept;
 
   void *handle_cpu_;
   void *handle_memory_;
@@ -34,32 +34,32 @@ class Handler {
 
 template<>
 inline AgentStatus Handler::ActivateAgent<CPU>() noexcept {
-  return ActivateAgent(handle_cpu_, kAgentCpuPath.data());
+  return ActivateAgent(handle_cpu_, paths::kAgentCpu.data());
 }
 
 template<>
 inline AgentStatus Handler::ActivateAgent<Memory>() noexcept {
-  return ActivateAgent(handle_memory_, kAgentMemoryPath.data());
+  return ActivateAgent(handle_memory_, paths::kAgentMemory.data());
 }
 
 template<>
 inline AgentStatus Handler::ActivateAgent<Network>() noexcept {
-  return ActivateAgent(handle_network_, kAgentNetworkPath.data());
+  return ActivateAgent(handle_network_, paths::kAgentNetwork.data());
 }
 
 template<>
-inline AgentStatus Handler::DeactivateAgent<CPU>() noexcept {
-  return DeactivateAgent(handle_cpu_);
+inline void Handler::DeactivateAgent<CPU>() noexcept {
+  DeactivateAgent(handle_cpu_);
 }
 
 template<>
-inline AgentStatus Handler::DeactivateAgent<Memory>() noexcept {
-  return DeactivateAgent(handle_memory_);
+inline void Handler::DeactivateAgent<Memory>() noexcept {
+  DeactivateAgent(handle_memory_);
 }
 
 template<>
-inline AgentStatus Handler::DeactivateAgent<Network>() noexcept {
-  return DeactivateAgent(handle_network_);
+inline void Handler::DeactivateAgent<Network>() noexcept {
+  DeactivateAgent(handle_network_);
 }
 
 template<>

@@ -33,7 +33,7 @@ class Logger {
   }
 
   friend Logger& operator<<(Logger& logger, char symbol) {
-    logger.ofs_ << symbol;
+    logger.ofs_ << "|" << symbol;
     return logger;
   }
 
@@ -41,7 +41,7 @@ class Logger {
   std::ofstream ofs_;
 
   Logger() {
-    ofs_.open(kLogsFilePath, std::fstream::app);
+    ofs_.open(paths::kLogsFile, std::fstream::app);
   }
 
   ~Logger() {

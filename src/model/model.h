@@ -22,26 +22,19 @@ class Model {
   Model() noexcept;
   ~Model();
 
-  AgentResponse LoadCpuAgent() noexcept;
-  AgentResponse LoadMemoryAgent() noexcept;
-  AgentResponse LoadNetworkAgent() noexcept;
+  void SetExceptionCallback(OnExceptionCallback callback) noexcept;
 
-  AgentResponse UnloadCpuAgent() noexcept;
-  AgentResponse UnloadMemoryAgent() noexcept;
-  AgentResponse UnloadNetworkAgent() noexcept;
-
-  AgentResponse SetConfig(const std::string& config_path);
-
-  std::vector<MetricResponse> UpdateMetrics();
+  void LoadAgents();
+  void UpdateMetrics();
 
   Metrics GetMetrics() noexcept;
-
-  void Reset() noexcept;
  private:
-  enum class ModelState {
+  enum class State {
     kIoBusy,
     kIoFree,
+    kLoadTerminate,
     kLoggerTerminate,
+    kLoadStopped,
     kLoggerStopped
   };
 
@@ -51,11 +44,18 @@ class Model {
   template<typename Tp>
   AgentResponse LoadAgent(Tp& agent, const char* name);
 
-  void LogMetrics(size_t delay);
-  void TerminateLogger();
+  AgentResponse SetConfig(const std::string& config_path);
 
-  bool log_thread_running_;
-  std::atomic<ModelState> state_;
+  std::vector<AgentResponse> LoadAgents_();
+  std::vector<MetricResponse> UpdateMetrics_();
+
+  void LoadAgentsWithDelay(size_t delay);
+  void LogMetrics(size_t delay);
+
+  void HandleAgentResponse(const AgentResponse& response);
+  void HandleMetricsResponse(const MetricResponse& response);
+
+  std::atomic<State> state_;
 
   std::mutex mutex_;
   std::condition_variable cv_;
@@ -70,6 +70,7 @@ class Model {
   Metrics metrics_{};
 
   SystemConfig config_{};
+  OnExceptionCallback exception_callback_;
 };
 
 } // namespace monsys

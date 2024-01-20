@@ -1,5 +1,5 @@
 #include "model/model.h"
-#include "model/files.h"
+#include "model/util.h"
 #include "base/logger.h"
 
 #include <thread>
@@ -28,6 +28,26 @@ inline std::string GetUrl(const std::string& type) {
 
 } // namespace
 
+inline void Model::HandleAgentResponse(const AgentResponse& response) {
+  if (response.status != AgentStatus::kOk) {
+    std::string error_str = "Agent name: " + response.name +
+                            "\nError: " + util::GetStatusString(response.status);
+    exception_callback_(error_str);
+    Logger::Log() << error_str << Logger::endlog;
+  }
+}
+
+inline void Model::HandleMetricsResponse(const MetricResponse &response) {
+  if (response.status != MetricStatus::kOk) {
+    std::string error_str ="Agent name: " + response.name +
+                           "\nAgent type: " + response.type +
+                           "\nError: " + util::GetStatusString(response.status);
+    exception_callback_(error_str);
+    Logger::Log() << error_str << Logger::endlog;
+  }
+}
+
+
 template<typename Callback>
 inline auto Model::ExecuteAgent(Callback callback, const char* name) {
   MetricConfig metric_config = config_[name];
@@ -46,7 +66,7 @@ inline AgentResponse Model::LoadAgent(Tp& agent, const char* name) {
   if (stat == AgentStatus::kOk) {
     agent = builder_.BuildAgent<Tp>();
   }
-  Logger::Log() << "Agent" << name << "loaded with status" << GetStatusString(stat) << Logger::endlog;
+  Logger::Log() << "Agent" << name << "loaded with status" << util::GetStatusString(stat) << Logger::endlog;
   return {stat, name};
 }
 
@@ -54,16 +74,16 @@ void Model::LogMetrics(size_t delay) {
   for(;;) {
     std::unique_lock<std::mutex> lock(mutex_);
     bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
-                                         [&state = state_] { return state == ModelState::kLoggerTerminate; } );
+                                         [&state = state_] { return state == State::kLoggerTerminate; } );
     if (terminate) {
-      state_ = ModelState::kLoggerStopped;
+      state_ = State::kLoggerStopped;
       cv_.notify_all();
       return;
     }
 
-    cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+    cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
 
-    state_ = ModelState::kIoBusy;
+    state_ = State::kIoBusy;
     cv_.notify_all();
 
     Logger::Log() << "cpu_load" << metrics_.cpu_load << "cpu_processes" << metrics_.cpu_processes
@@ -72,32 +92,18 @@ void Model::LogMetrics(size_t delay) {
                   << "url_available" << metrics_.url_available << "inet_throughput" << metrics_.inet_throughput
                   << Logger::endlog;
 
-    state_ = ModelState::kIoFree;
+    state_ = State::kIoFree;
     cv_.notify_all();
   }
 }
 
-inline void Model::TerminateLogger() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
-  state_ = ModelState::kLoggerTerminate;
-  cv_.notify_all();
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kLoggerStopped; });
-}
-
 AgentResponse Model::SetConfig(const std::string& config_path) {
   constexpr const char name[] = "config";
-  auto[ok, conf] = files::ParseConfig(config_path);
+  auto[ok, conf] = util::ParseConfig(config_path);
   if (!ok) {
     return {AgentStatus::kNotLoaded, name} ;
   }
   config_ = std::move(conf);
-
-  if (log_thread_running_) {
-    TerminateLogger();
-  } else {
-    log_thread_running_ = true;
-  }
 
   std::thread log_thread(&Model::LogMetrics, this, config_["logger"].timeout);
   log_thread.detach();
@@ -105,49 +111,111 @@ AgentResponse Model::SetConfig(const std::string& config_path) {
   return {AgentStatus::kOk, name};
 }
 
-Model::Model() noexcept : log_thread_running_(false),
-                          state_(ModelState::kIoFree),
+Model::Model() noexcept : state_(State::kIoFree),
                           builder_(&handler_) {
-  files::CreateDirectory(kLogsPath);
+  util::CreateDirectory(paths::kLogs);
 }
 
 Model::~Model() {
-  if (log_thread_running_) {
-    TerminateLogger();
-  }
-}
-
-AgentResponse Model::LoadCpuAgent() noexcept {
-  return LoadAgent(cpu_agent_, kCpuAgentName);
-}
-
-AgentResponse Model::LoadMemoryAgent() noexcept {
-  return LoadAgent(memory_agent_, kMemoryAgentName);
-}
-
-AgentResponse Model::LoadNetworkAgent() noexcept {
-  return LoadAgent(network_agent_, kNetworkAgentName);
-}
-
-AgentResponse Model::UnloadCpuAgent() noexcept {
-  return {handler_.DeactivateAgent<agents::CPU>(), kCpuAgentName};
-}
-
-AgentResponse Model::UnloadMemoryAgent() noexcept {
-  return {handler_.DeactivateAgent<agents::Memory>(), kNetworkAgentName};
-}
-
-AgentResponse Model::UnloadNetworkAgent() noexcept {
-  return {handler_.DeactivateAgent<agents::Network>(), kNetworkAgentName};
-}
-
-std::vector<MetricResponse> Model::UpdateMetrics() {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
 
-  state_ = ModelState::kIoBusy;
+  state_ = State::kLoggerTerminate;
+  cv_.notify_all();
+  cv_.wait(lock, [&state = state_] { return state == State::kLoggerStopped; });
+
+  state_ = State::kLoadTerminate;
+  cv_.notify_all();
+  cv_.wait(lock, [&state = state_] { return state == State::kLoadStopped; });
+}
+
+void Model::SetExceptionCallback(OnExceptionCallback callback) noexcept {
+  exception_callback_ = std::move(callback);
+}
+
+void Model::LoadAgents() {
+  {
+    AgentResponse response = SetConfig(paths::kConfig.data());
+    HandleAgentResponse(response);
+  }
+  std::vector<AgentResponse> responses = LoadAgents_();
+  for(const AgentResponse& response : responses) {
+    HandleAgentResponse(response);
+  }
+
+  std::thread load_thread(&Model::LoadAgentsWithDelay, this, config_["load"].timeout);
+  load_thread.detach();
+}
+
+void Model::UpdateMetrics() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
+
+  state_ = State::kIoBusy;
   cv_.notify_all();
 
+  std::vector<MetricResponse> responses = UpdateMetrics_();
+  for(const MetricResponse& response : responses) {
+    HandleMetricsResponse(response);
+  }
+
+  state_ = State::kIoFree;
+  cv_.notify_all();
+}
+
+std::vector<AgentResponse> Model::LoadAgents_() {
+  std::vector<AgentResponse> responses;
+
+  handler_.DeactivateAgent<agents::CPU>();
+  handler_.DeactivateAgent<agents::Memory>();
+  handler_.DeactivateAgent<agents::Network>();
+
+  if (util::FileExists(paths::kAgentCpu.data())) {
+    AgentResponse cpu_response = LoadAgent(cpu_agent_, kCpuAgentName);
+    responses.push_back(cpu_response);
+  }
+
+  if (util::FileExists(paths::kAgentMemory.data())) {
+    AgentResponse memory_response = LoadAgent(memory_agent_, kMemoryAgentName);
+    responses.push_back(memory_response);
+  }
+
+  if (util::FileExists(paths::kAgentNetwork.data())) {
+    AgentResponse network_response = LoadAgent(network_agent_, kNetworkAgentName);
+    responses.push_back(network_response);
+  }
+
+  return responses;
+}
+
+void Model::LoadAgentsWithDelay(size_t delay) {
+  for(;;) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
+                                  [&state = state_] { return state == State::kLoadTerminate; });
+    if (terminate) {
+      state_ = State::kLoadStopped;
+      cv_.notify_all();
+      return;
+    }
+
+    cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
+
+    state_ = State::kIoBusy;
+    cv_.notify_all();
+
+    std::vector<AgentResponse> responses = LoadAgents_();
+    for(const AgentResponse& response : responses) {
+      HandleAgentResponse(response);
+    }
+
+    state_ = State::kIoFree;
+    cv_.notify_all();
+  }
+
+}
+
+std::vector<MetricResponse> Model::UpdateMetrics_() {
   std::vector<MetricResponse> responses(agents::kAgentsAmount,
                                         MetricResponse{
                                           .status = MetricStatus::kOk,
@@ -223,35 +291,22 @@ std::vector<MetricResponse> Model::UpdateMetrics() {
     thread.join();
   }
 
-  state_ = ModelState::kIoFree;
-  cv_.notify_all();
-
   return responses;
 }
 
 Metrics Model::GetMetrics() noexcept {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == ModelState::kIoFree; });
+  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
 
-  state_ = ModelState::kIoBusy;
+  state_ = State::kIoBusy;
   cv_.notify_all();
 
   Metrics metrics = metrics_;
 
-  state_ = ModelState::kIoFree;
+  state_ = State::kIoFree;
   cv_.notify_all();
 
   return metrics;
-}
-
-void Model::Reset() noexcept {
-  handler_.DeactivateAgent<agents::CPU>();
-  handler_.DeactivateAgent<agents::Memory>();
-  handler_.DeactivateAgent<agents::Network>();
-
-  cpu_agent_ = {};
-  memory_agent_ = {};
-  network_agent_ = {};
 }
 
 } // namespace monsys

@@ -1,6 +1,9 @@
 name: logger
 timeout: 250
 
+name: load
+timeout: 1000
+
 name: cpu
 type: cpu_agent
 range: < 90

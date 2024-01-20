@@ -2,8 +2,11 @@
 #define MONITORINGSYSTEM_SRC_BASE_TYPES_H_
 
 #include <string>
+#include <functional>
 
 namespace monsys {
+
+using OnExceptionCallback = std::function<void(const std::string&)>;
 
 constexpr const char kCpuAgentName[] = "cpu_agent",
                      kMemoryAgentName[] = "memory_agent",
@@ -46,9 +49,6 @@ struct Metrics {
   double inet_throughput;
   int url_available;
 };
-
-std::string GetStatusString(AgentStatus status);
-std::string GetStatusString(MetricStatus status);
 
 } // namespace monsys
 

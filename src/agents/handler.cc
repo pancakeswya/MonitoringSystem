@@ -27,13 +27,12 @@ AgentStatus Handler::ActivateAgent(void* &handle, const char* path) noexcept {
   return AgentStatus::kOk;
 }
 
-AgentStatus Handler::DeactivateAgent(void* &handle) noexcept {
+void Handler::DeactivateAgent(void* &handle) noexcept {
   if (!handle) {
-    return AgentStatus::kInvalidDeactivate;
+    return;
   }
   dlclose(handle);
   handle = nullptr;
-  return AgentStatus::kOk;
 }
 
 } // namespace monsys::agents

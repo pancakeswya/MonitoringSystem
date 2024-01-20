@@ -4,11 +4,13 @@ NAME   := MonitoringSystem
 CMAKE := cmake
 
 SRC_DIR   := src
-LOG_DIR   := $(SRC_DIR)/log
+LOG_DIR   := log
 BUILD_DIR := build
 
-AGENTSCORELIB_DIR := $(SRC_DIR)/agents/lib
+AGENTSCORELIB_DIR := lib
 AGENTSCORESRC_DIR := $(SRC_DIR)/agents/core
+
+CONFIG_PATH := config/config.agents
 
 AGENTSCORELIB_CPU_PATH := $(AGENTSCORELIB_DIR)/libAgent_CPU
 AGENTSCORELIB_MEMORY_PATH := $(AGENTSCORELIB_DIR)/libAgent_MEMORY
@@ -46,7 +48,8 @@ build: agentslib
 		-DCORELIB_PATH=$(AGENTSCORELIB_DIR) \
 		-DCORELIB_CPU_PATH=$(word 1, $(AGENTSLIB_PATH)) \
 		-DCORELIB_MEMORY_PATH=$(word 2, $(AGENTSLIB_PATH)) \
-		-DCORELIB_NETWORK_PATH=$(word 3, $(AGENTSLIB_PATH)) && \
+		-DCORELIB_NETWORK_PATH=$(word 3, $(AGENTSLIB_PATH)) \
+		-DCONFIG_PATH=$(CONFIG_PATH) && \
 	$(MAKE) -C $(BUILD_DIR)
 
 run:
