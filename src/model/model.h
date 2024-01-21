@@ -5,7 +5,6 @@
 #include "agents/builder.h"
 #include "agents/handler.h"
 #include "base/types.h"
-#include "model/config.h"
 
 #include <atomic>
 #include <mutex>
@@ -22,10 +21,11 @@ class Model {
   Model() noexcept;
   ~Model();
 
-  void SetExceptionCallback(OnExceptionCallback callback) noexcept;
+  void SetExceptionCallback(ExceptionCallback callback) noexcept;
 
   void LoadAgents();
   void UpdateMetrics();
+  void UpdateConfig(const SystemConfig& config);
 
   Metrics GetMetrics() noexcept;
  private:
@@ -70,7 +70,7 @@ class Model {
   Metrics metrics_{};
 
   SystemConfig config_{};
-  OnExceptionCallback exception_callback_;
+  ExceptionCallback exception_callback_;
 };
 
 } // namespace monsys

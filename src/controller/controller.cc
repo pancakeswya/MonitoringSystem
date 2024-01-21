@@ -10,12 +10,16 @@ void Controller::LoadAgents() noexcept {
   model_->LoadAgents();
 }
 
+void Controller::UpdateConfig(const SystemConfig& config) {
+  model_->UpdateConfig(config);
+}
+
 Metrics Controller::GetMetrics() noexcept {
   model_->UpdateMetrics();
   return model_->GetMetrics();
 }
 
-void Controller::OnException(OnExceptionCallback callback) {
+void Controller::OnException(ExceptionCallback callback) {
   model_->SetExceptionCallback(std::move(callback));
 }
 

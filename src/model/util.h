@@ -2,7 +2,6 @@
 #define MONITORINGSYSTEM_SRC_MODEL_UTIL_H_
 
 #include "base/types.h"
-#include "model/config.h"
 
 #include <vector>
 #include <string>
@@ -15,9 +14,10 @@ extern std::string GetStatusString(MetricStatus status);
 
 extern bool FileExists(const std::string& path);
 extern void CreateDirectory(const std::string& path);
-
 extern std::vector<std::string> GetFileList(const std::string& path);
+
 extern std::pair<bool, SystemConfig> ParseConfig(const std::string& path);
+extern bool WriteConfig(const SystemConfig& config, const std::string& path);
 
 } // namespace monsys
 

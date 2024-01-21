@@ -21,23 +21,6 @@ size_t SkipAlpha(const std::string& str) noexcept {
   return i;
 }
 
-inline SystemConfig DefaultConfig() noexcept {
-  return SystemConfig {
-      {"logger", {}},
-      {"cpu", {}},
-      {"processes", {}},
-      {"ram_total", {}},
-      {"ram", {}},
-      {"hard_volume", {}},
-      {"hard_ops", {}},
-      {"hard_throughput", {}},
-      {"inet_throughput", {}},
-      {"url",
-       {.type = "network_agent:ya.ru"}
-      }
-  };
-}
-
 } // namespace
 
 std::string GetStatusString(AgentStatus status) {
@@ -98,22 +81,41 @@ std::pair<bool, SystemConfig> ParseConfig(const std::string& path) {
     if (field_name == "type") {
       config[last_name].type = line.substr(i + 1, line.size() - i - 1);
     } else if (field_name == "range") {
+      auto&[min, max] = config[last_name].range;
       if (line[i] == '>') {
-        config[last_name].range.first = std::strtod(&line[i + 1], nullptr);
+        min = std::strtod(&line[i + 1], nullptr);
       } else if (line[i] == '<') {
-        config[last_name].range.second = std::strtod(&line[i + 1], nullptr);
+        max = std::strtod(&line[i + 1], nullptr);
       } else if (line[i] == '=' && line[i + 1] == '=') {
         double val = std::strtod(&line[i + 2], nullptr);
-        config[last_name].range.first = val - 1;
-        config[last_name].range.second = val + 1;
+        min = val - 1;
+        max = val + 1;
       }
     } else if (field_name == "timeout") {
       config[last_name].timeout = std::strtoul(&line[i], nullptr, 10);
     }
-
   }
-
   return {true, config};
+}
+
+bool WriteConfig(const SystemConfig& config, const std::string& path) {
+  std::ofstream ofs(path.data());
+  if (!ofs.is_open()) {
+    return false;
+  }
+  for(auto&[name, value] : config) {
+    ofs << "name: " << name << '\n';
+    auto&[type, range, timeout] = value;
+    auto[min, max] = range;
+    if (!type.empty()) {
+      ofs << "type: " << type << '\n';
+    }
+    if (min != 0 && max != 0) {
+      ofs << "range: > " << min << ", < " << max << '\n';
+    }
+    ofs << "timeout: " << timeout << "\n\n";
+  }
+  return true;
 }
 
 } // namespace monsys

@@ -19,6 +19,8 @@ int main() {
   std::cout << "cpu load: " << metrics.cpu_load << std::endl;
   std::cout << "cpu processes: " << metrics.cpu_processes << std::endl;
 
+  //controller.UpdateConfig(monsys::DefaultConfig());
+
   std::cout << "ram total: " << metrics.ram_total << std::endl;
   std::cout << "ram: " << metrics.ram << std::endl;
   std::cout << "hard ops: " << metrics.hard_ops << std::endl;

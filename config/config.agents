@@ -48,5 +48,3 @@ name: inet_throughput
 type: network_agent
 range: < 2000
 timeout: 990000
-
-

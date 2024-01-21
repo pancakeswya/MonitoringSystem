@@ -12,10 +12,11 @@ class Controller {
   explicit Controller(Model* model) noexcept;
 
   void LoadAgents() noexcept;
+  void UpdateConfig(const SystemConfig& config);
 
   Metrics GetMetrics() noexcept;
 
-  void OnException(OnExceptionCallback);
+  void OnException(ExceptionCallback);
  private:
   Model* model_;
 };

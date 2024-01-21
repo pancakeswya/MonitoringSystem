@@ -129,7 +129,7 @@ Model::~Model() {
   cv_.wait(lock, [&state = state_] { return state == State::kLoadStopped; });
 }
 
-void Model::SetExceptionCallback(OnExceptionCallback callback) noexcept {
+void Model::SetExceptionCallback(ExceptionCallback callback) noexcept {
   exception_callback_ = std::move(callback);
 }
 
@@ -157,6 +157,24 @@ void Model::UpdateMetrics() {
   std::vector<MetricResponse> responses = UpdateMetrics_();
   for(const MetricResponse& response : responses) {
     HandleMetricsResponse(response);
+  }
+
+  state_ = State::kIoFree;
+  cv_.notify_all();
+}
+
+void Model::UpdateConfig(const SystemConfig& config) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
+
+  state_ = State::kIoBusy;
+  cv_.notify_all();
+
+  config_ = config;
+  if (bool is_written = util::WriteConfig(config, paths::kConfig.data()); !is_written) {
+    std::string error_str = "Failed to write config";
+    exception_callback_(error_str);
+    Logger::Log() << error_str << Logger::endlog;
   }
 
   state_ = State::kIoFree;

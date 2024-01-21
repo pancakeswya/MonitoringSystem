@@ -3,10 +3,9 @@
 
 #include <string>
 #include <functional>
+#include <limits>
 
 namespace monsys {
-
-using OnExceptionCallback = std::function<void(const std::string&)>;
 
 constexpr const char kCpuAgentName[] = "cpu_agent",
                      kMemoryAgentName[] = "memory_agent",
@@ -49,6 +48,58 @@ struct Metrics {
   double inet_throughput;
   int url_available;
 };
+
+struct MetricConfig {
+  static constexpr unsigned int default_timeout = 990000;
+
+  std::string type{};
+  std::pair<double, double> range{-std::numeric_limits<double>::max(),
+                                  std::numeric_limits<double>::max()};
+  unsigned int timeout = default_timeout;
+};
+
+using SystemConfig = std::unordered_map<std::string, MetricConfig>;
+
+using ExceptionCallback = std::function<void(const std::string&)>;
+
+namespace {
+
+inline SystemConfig DefaultConfig() noexcept {
+  return {
+      {"logger", {
+        .range = {}
+      }},
+      {"cpu", {
+          .type = "cpu_agent"
+      }},
+      {"processes", {
+          .type = "cpu_agent"
+      }},
+      {"ram_total", {
+          .type = "memory_agent"
+      }},
+      {"ram", {
+          .type = "memory_agent"
+      }},
+      {"hard_volume", {
+          .type = "memory_agent"
+      }},
+      {"hard_ops", {
+          .type = "memory_agent"
+      }},
+      {"hard_throughput", {
+          .type = "memory_agent"
+      }},
+      {"inet_throughput", {
+          .type = "network_agent"
+      }},
+      {"url",
+       {.type = "network_agent:ya.ru"}
+      }
+  };
+}
+
+} // namespace
 
 } // namespace monsys
 
