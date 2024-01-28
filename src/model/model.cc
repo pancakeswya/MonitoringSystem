@@ -18,7 +18,7 @@ inline std::pair<MetricStatus, Tp> RangeBoundsCheck(Tp val, std::pair<double, do
   return {MetricStatus::kOk, val};
 }
 
-inline std::string GetUrl(const std::string& type) {
+inline std::string GetUrl(const std::string &type) {
   size_t pos = type.find(':');
   if (pos == std::string::npos) {
     return "";
@@ -28,40 +28,41 @@ inline std::string GetUrl(const std::string& type) {
 
 } // namespace
 
-inline void Model::HandleAgentResponse(const AgentResponse& response) {
-  if (response.status != AgentStatus::kOk) {
-    std::string error_str = "Agent name: " + response.name +
-                            "\nError: " + util::GetStatusString(response.status);
-    exception_callback_(error_str);
-    Logger::Log() << error_str << Logger::endlog;
+inline void Model::HandleAgentResponse(const AgentResponse &response) {
+  if (response.status == AgentStatus::kOk) {
+    return;
   }
+  std::string error_str = "Agent name: " + response.name +
+      "\nError: " + util::GetStatusString(response.status);
+  exception_callback_(error_str);
+  Logger::Log() << error_str << Logger::endlog;
 }
 
 inline void Model::HandleMetricsResponse(const MetricResponse &response) {
-  if (response.status != MetricStatus::kOk) {
-    std::string error_str ="Agent name: " + response.name +
-                           "\nAgent type: " + response.type +
-                           "\nError: " + util::GetStatusString(response.status);
-    exception_callback_(error_str);
-    Logger::Log() << error_str << Logger::endlog;
+  if (response.status == MetricStatus::kOk) {
+    return;
   }
+  std::string error_str = "Agent name: " + response.name +
+      "\nAgent type: " + response.type +
+      "\nError: " + util::GetStatusString(response.status);
+  exception_callback_(error_str);
+  Logger::Log() << error_str << Logger::endlog;
 }
 
-
 template<typename Callback>
-inline auto Model::ExecuteAgent(Callback callback, const char* name) {
+inline auto Model::ExecuteAgent(Callback callback, const char *name) {
   MetricConfig metric_config = config_[name];
   auto curr_val = callback(metric_config.timeout);
-  auto[stat, res_val] = RangeBoundsCheck(curr_val, metric_config.range);
+  auto [stat, res_val] = RangeBoundsCheck(curr_val, metric_config.range);
   return std::pair<decltype(res_val), MetricResponse>{res_val,
                                                       {.status = stat,
-                                                       .name = name,
-                                                       .type = metric_config.type
+                                                          .name = name,
+                                                          .type = metric_config.type
                                                       }};
 }
 
 template<typename Tp>
-inline AgentResponse Model::LoadAgent(Tp& agent, const char* name) {
+inline AgentResponse Model::LoadAgent(Tp &agent, const char *name) {
   AgentStatus stat = handler_.ActivateAgent<Tp>();
   if (stat == AgentStatus::kOk) {
     agent = builder_.BuildAgent<Tp>();
@@ -71,10 +72,10 @@ inline AgentResponse Model::LoadAgent(Tp& agent, const char* name) {
 }
 
 void Model::LogMetrics(size_t delay) {
-  for(;;) {
+  for (;;) {
     std::unique_lock<std::mutex> lock(mutex_);
     bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
-                                         [&state = state_] { return state == State::kLoggerTerminate; } );
+                                  [&state = state_] { return state == State::kLoggerTerminate; });
     if (terminate) {
       state_ = State::kLoggerStopped;
       cv_.notify_all();
@@ -97,11 +98,11 @@ void Model::LogMetrics(size_t delay) {
   }
 }
 
-AgentResponse Model::SetConfig(const std::string& config_path) {
+AgentResponse Model::SetConfig(const std::string &config_path) {
   constexpr const char name[] = "config";
-  auto[ok, conf] = util::ParseConfig(config_path);
+  auto [ok, conf] = util::ParseConfig(config_path);
   if (!ok) {
-    return {AgentStatus::kNotLoaded, name} ;
+    return {AgentStatus::kNotLoaded, name};
   }
   config_ = std::move(conf);
 
@@ -111,8 +112,8 @@ AgentResponse Model::SetConfig(const std::string& config_path) {
   return {AgentStatus::kOk, name};
 }
 
-Model::Model() noexcept : state_(State::kIoFree),
-                          builder_(&handler_) {
+Model::Model() noexcept: state_(State::kIoFree),
+                         builder_(&handler_) {
   util::CreateDirectory(paths::kLogs);
 }
 
@@ -139,7 +140,7 @@ void Model::LoadAgents() {
     HandleAgentResponse(response);
   }
   std::vector<AgentResponse> responses = LoadAgents_();
-  for(const AgentResponse& response : responses) {
+  for (const AgentResponse &response : responses) {
     HandleAgentResponse(response);
   }
 
@@ -155,7 +156,7 @@ void Model::UpdateMetrics() {
   cv_.notify_all();
 
   std::vector<MetricResponse> responses = UpdateMetrics_();
-  for(const MetricResponse& response : responses) {
+  for (const MetricResponse &response : responses) {
     HandleMetricsResponse(response);
   }
 
@@ -163,7 +164,7 @@ void Model::UpdateMetrics() {
   cv_.notify_all();
 }
 
-void Model::UpdateConfig(const SystemConfig& config) {
+void Model::UpdateConfig(const SystemConfig &config) {
   std::unique_lock<std::mutex> lock(mutex_);
   cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
 
@@ -171,7 +172,7 @@ void Model::UpdateConfig(const SystemConfig& config) {
   cv_.notify_all();
 
   config_ = config;
-  if (bool is_written = util::WriteConfig(config, paths::kConfig.data()); !is_written) {
+  if (!util::WriteConfig(config, paths::kConfig.data())) {
     std::string error_str = "Failed to write config";
     exception_callback_(error_str);
     Logger::Log() << error_str << Logger::endlog;
@@ -207,7 +208,7 @@ std::vector<AgentResponse> Model::LoadAgents_() {
 }
 
 void Model::LoadAgentsWithDelay(size_t delay) {
-  for(;;) {
+  for (;;) {
     std::unique_lock<std::mutex> lock(mutex_);
     bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
                                   [&state = state_] { return state == State::kLoadTerminate; });
@@ -223,7 +224,7 @@ void Model::LoadAgentsWithDelay(size_t delay) {
     cv_.notify_all();
 
     std::vector<AgentResponse> responses = LoadAgents_();
-    for(const AgentResponse& response : responses) {
+    for (const AgentResponse &response : responses) {
       HandleAgentResponse(response);
     }
 
@@ -236,9 +237,9 @@ void Model::LoadAgentsWithDelay(size_t delay) {
 std::vector<MetricResponse> Model::UpdateMetrics_() {
   std::vector<MetricResponse> responses(agents::kAgentsAmount,
                                         MetricResponse{
-                                          .status = MetricStatus::kOk,
-                                          .name = "",
-                                          .type = ""
+                                            .status = MetricStatus::kOk,
+                                            .name = "",
+                                            .type = ""
                                         }
   );
   std::vector<std::thread> threads;
@@ -305,7 +306,7 @@ std::vector<MetricResponse> Model::UpdateMetrics_() {
     });
   }
 
-  for(std::thread& thread : threads) {
+  for (std::thread &thread : threads) {
     thread.join();
   }
 

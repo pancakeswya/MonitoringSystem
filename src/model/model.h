@@ -75,5 +75,4 @@ class Model {
 
 } // namespace monsys
 
-
 #endif // MONITORINGSYSTEM_SRC_MODEL_MODEL_H_

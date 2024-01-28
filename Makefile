@@ -29,7 +29,7 @@ endif
 
 RM := rm -rf
 
-MAKEFLAGS    += --no-print-directory
+MAKEFLAGS += --no-print-directory
 
 all: build run
 
