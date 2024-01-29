@@ -13,6 +13,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/agents/core)
 
+add_library(TelegramBot STATIC
+        ${SRC_DIR}/tools/telegram_bot.cc
+        ${SRC_DIR}/tools/telegram_bot.h)
+
 add_library(AgentsHandler STATIC
         ${SRC_DIR}/agents/handler.cc
         ${SRC_DIR}/agents/handler.h)
