@@ -3,6 +3,7 @@ build*
 cmake-build-*
 lib*
 .idea*
+CMakeLists.txt.user*
 # Prerequisites
 *.d
 
