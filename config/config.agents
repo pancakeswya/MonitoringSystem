@@ -11,7 +11,7 @@ timeout: 990000
 
 name: processes
 type: cpu_agent
-range: < 30000
+range: < 60000
 timeout: 990000
 
 name: ram_total
@@ -36,7 +36,7 @@ timeout: 990000
 
 name: hard_throughput
 type: memory_agent
-range: > 10, < 50003423243
+range: > 10, < 500034
 timeout: 990000
 
 name: url

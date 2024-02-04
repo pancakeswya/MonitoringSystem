@@ -44,7 +44,9 @@ private:
     void Setup();
     void StartMonitoring();
     void UpdateSize();
+    void UpdatePlots(qint64 curr_time, const Metrics& metrics, const SystemConfig& config);
     void UpdateMetrics();
+    void UpdateValues(const Metrics& metrics);
     void UpdateCharts();
 
 

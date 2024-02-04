@@ -68,13 +68,13 @@ void MonitoringView::Setup() {
     });
 }
 
-void MonitoringView::StartMonitoring() {
+inline void MonitoringView::StartMonitoring() {
     controller_->LoadAgents();
     metrics_worker_.SetWork([&] { UpdateMetrics(); });
     metrics_worker_.Start();
 }
 
-void MonitoringView::UpdateCharts() {
+inline void MonitoringView::UpdateCharts() {
     ui_->cpu_load_view->update();
     ui_->cpu_process_view->update();
     ui_->ram_total_view->update();
@@ -86,13 +86,21 @@ void MonitoringView::UpdateCharts() {
     ui_->inet_throughput_view->update();
 }
 
-void MonitoringView::UpdateMetrics() {
-    SystemConfig config = controller_->GetConfig();
+inline void MonitoringView::UpdateValues(const Metrics& metrics) {
+    ui_->current_value_cpu_load_lable->setText(QString::number(metrics.cpu_load));
+    ui_->current_value_cpu_process_lable->setText(QString::number(metrics.cpu_processes));
 
-    Metrics metrics = controller_->GetMetrics();
+    ui_->current_value_ram_total_lable->setText(QString::number(metrics.ram_total));
+    ui_->current_value_ram_lable->setText(QString::number(metrics.ram));
+    ui_->current_value_hard_volume_lable->setText(QString::number(metrics.hard_volume));
+    ui_->current_value_hard_ops_lable->setText(QString::number(metrics.hard_ops));
+    ui_->current_value_hard_throughput_lable->setText(QString::number(metrics.hard_throughput));
 
-    qint64 curr_time = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    ui_->current_value_url_available_lable->setText(QString::number(metrics.url_available));
+    ui_->current_value_inet_throughput_lable->setText(QString::number(metrics.inet_throughput));
+}
 
+inline void MonitoringView::UpdatePlots(qint64 curr_time, const Metrics& metrics, const SystemConfig& config) {
     plots_[kCpuLoadPlot].AddValue(curr_time, metrics.cpu_load, PairToRange(config.at("cpu").range));
     plots_[kCpuProcessPlot].AddValue(curr_time, metrics.cpu_processes, PairToRange(config.at("processes").range));
     plots_[kRamTotalPlot].AddValue(curr_time, metrics.ram_total, PairToRange(config.at("ram_total").range));
@@ -102,7 +110,16 @@ void MonitoringView::UpdateMetrics() {
     plots_[kHardThroughputPlot].AddValue(curr_time, metrics.hard_throughput, PairToRange(config.at("hard_throughput").range));
     plots_[kUrlAvailablePlot].AddValue(curr_time, metrics.url_available, PairToRange(config.at("url").range));
     plots_[kInetThroughputPlot].AddValue(curr_time, metrics.inet_throughput, PairToRange(config.at("inet_throughput").range));
+}
 
+void MonitoringView::UpdateMetrics() {
+    SystemConfig config = controller_->GetConfig();
+    Metrics metrics = controller_->GetMetrics();
+
+    qint64 curr_time = QDateTime::currentDateTime().toMSecsSinceEpoch();
+
+    UpdatePlots(curr_time, metrics, config);
+    UpdateValues(metrics);
     UpdateCharts();
 }
 

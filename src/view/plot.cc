@@ -48,6 +48,7 @@ void Plot::AddValue(qreal x, qreal y, const Range& range_y) {
     if (min_date.toMSecsSinceEpoch() == 0) {
         min_date = QDateTime::fromMSecsSinceEpoch(x);
     }
+
     x_axis_->setRange(min_date, QDateTime::fromMSecsSinceEpoch(x));
     y_axis_->setRange(range_y.min, range_y.max);
 
