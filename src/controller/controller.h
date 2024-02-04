@@ -13,6 +13,7 @@ class Controller {
 
   void LoadAgents() noexcept;
   void UpdateConfig(const SystemConfig& config);
+  SystemConfig GetConfig() noexcept;
 
   Metrics GetMetrics() noexcept;
 

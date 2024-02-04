@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     std::setlocale(LC_NUMERIC, "C");
-    
+
     monsys::Model m;
     monsys::Controller c(&m);
     monsys::MonitoringView v(&c);

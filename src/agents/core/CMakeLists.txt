@@ -28,15 +28,21 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(agent_cpu agent_util)
 endif()
 
+set_target_properties(agent_cpu PROPERTIES OUTPUT_NAME "agents_cpu")
+
 add_library(agent_memory SHARED
         ${CORE_SRC}/memory.c
         memory.h)
 
 target_link_libraries(agent_memory agent_util)
 
+set_target_properties(agent_memory PROPERTIES OUTPUT_NAME "agents_memory")
+
 add_library(agent_network SHARED
         ${CORE_SRC}/network.c
         network.h)
+
+set_target_properties(agent_network PROPERTIES OUTPUT_NAME "agents_network")
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(agent_network agent_util)

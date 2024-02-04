@@ -1,5 +1,5 @@
-#ifndef PLOT_H_
-#define PLOT_H_
+#ifndef MONITORINGSYSTEM_SRC_VIEW_PLOT_H_
+#define MONITORINGSYSTEM_SRC_VIEW_PLOT_H_
 
 #include <QtCharts/QtCharts>
 
@@ -35,4 +35,4 @@ private:
 } // namespace monsys
 
 
-#endif // PLOT_H_
+#endif // MONITORINGSYSTEM_SRC_VIEW_PLOT_H_

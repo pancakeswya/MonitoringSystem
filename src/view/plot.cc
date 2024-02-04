@@ -66,8 +66,6 @@ Plot::~Plot() {
     delete line_series_;
     delete area_series_;
     delete chart_;
-    delete y_axis_;
-    delete x_axis_;
 }
 
 } // namespace monsys

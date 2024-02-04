@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tab_widget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="cpu_tab">
        <attribute name="title">
@@ -35,16 +35,30 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>758</width>
-             <height>511</height>
+             <width>744</width>
+             <height>512</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
-             <widget class="QChartView" name="cpu_load_view" native="true"/>
+             <widget class="QChartView" name="cpu_load_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="cpu_process_view" native="true"/>
+             <widget class="QChartView" name="cpu_process_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -67,25 +81,60 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>758</width>
-             <height>511</height>
+             <width>744</width>
+             <height>1262</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
-             <widget class="QChartView" name="ram_total_view" native="true"/>
+             <widget class="QChartView" name="ram_total_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="ram_view" native="true"/>
+             <widget class="QChartView" name="ram_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="hard_volume_view" native="true"/>
+             <widget class="QChartView" name="hard_volume_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="hard_ops_view" native="true"/>
+             <widget class="QChartView" name="hard_ops_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="hard_throughput_view" native="true"/>
+             <widget class="QChartView" name="hard_throughput_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -108,16 +157,30 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>758</width>
-             <height>511</height>
+             <width>744</width>
+             <height>512</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <widget class="QChartView" name="url_available_view" native="true"/>
+             <widget class="QChartView" name="url_available_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QChartView" name="inet_throughput_view" native="true"/>
+             <widget class="QChartView" name="inet_throughput_view" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>244</height>
+               </size>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>

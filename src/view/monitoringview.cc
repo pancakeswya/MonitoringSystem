@@ -3,6 +3,7 @@
 
 #include <QDateTime>
 #include <QMessageBox>
+
 #include <thread>
 
 namespace monsys {
@@ -15,12 +16,21 @@ inline void SetupChartView(QChartView* view, Plot& plot) {
     view->setChart(plot.Chart());
 }
 
+
+inline Plot::Range PairToRange(const std::pair<double, double>& pair) noexcept {
+    return {
+        .min = pair.first,
+        .max = pair.second
+    };
+}
+
 } // namespace
 
 MonitoringView::MonitoringView(Controller* controller)
     : controller_(controller), bot_(kTeleChatId, kTeleToken), ui_(new Ui::MonitoringView) {
     ui_->setupUi(this);
     Setup();
+    StartMonitoring();
 }
 
 void MonitoringView::Setup() {
@@ -42,10 +52,43 @@ void MonitoringView::Setup() {
     });
 }
 
+void MonitoringView::StartMonitoring() {
+    controller_->LoadAgents();
+    metrics_worker_.SetWork([&] { UpdateMetrics(); });
+    metrics_worker_.Start();
+}
 
-//void MonitoringView::DrawPlot(double val, const Plot::Range& range) {
-//  // plot_.AddValue(QDateTime::currentDateTime().toMSecsSinceEpoch(), val, range);
-//}
+void MonitoringView::UpdateCharts() {
+    ui_->cpu_load_view->update();
+    ui_->cpu_process_view->update();
+    ui_->ram_total_view->update();
+    ui_->ram_view->update();
+    ui_->hard_volume_view->update();
+    ui_->hard_ops_view->update();
+    ui_->hard_throughput_view->update();
+    ui_->url_available_view->update();
+    ui_->inet_throughput_view->update();
+}
+
+void MonitoringView::UpdateMetrics() {
+    SystemConfig config = controller_->GetConfig();
+
+    Metrics metrics = controller_->GetMetrics();
+
+    qint64 curr_time = QDateTime::currentDateTime().toMSecsSinceEpoch();
+
+    plots_[kCpuLoadPlot].AddValue(curr_time, metrics.cpu_load, PairToRange(config.at("cpu").range));
+    plots_[kCpuProcessPlot].AddValue(curr_time, metrics.cpu_processes, PairToRange(config.at("processes").range));
+    plots_[kRamTotalPlot].AddValue(curr_time, metrics.ram_total, PairToRange(config.at("ram_total").range));
+    plots_[kRamPlot].AddValue(curr_time, metrics.ram, PairToRange(config.at("ram").range));
+    plots_[kHardVolumePlot].AddValue(curr_time, metrics.hard_volume, PairToRange(config.at("hard_volume").range));
+    plots_[kHardOpsPlot].AddValue(curr_time, metrics.hard_ops, PairToRange(config.at("hard_ops").range));
+    plots_[kHardThroughputPlot].AddValue(curr_time, metrics.hard_throughput, PairToRange(config.at("hard_throughput").range));
+    plots_[kUrlAvailablePlot].AddValue(curr_time, metrics.url_available, PairToRange(config.at("url").range));
+    plots_[kInetThroughputPlot].AddValue(curr_time, metrics.inet_throughput, PairToRange(config.at("inet_throughput").range));
+
+    UpdateCharts();
+}
 
 MonitoringView::~MonitoringView() {
     delete ui_;

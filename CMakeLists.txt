@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.28)
 project(MonitoringSystem VERSION 1.0)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +11,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -O3")
 set(SRC_DIR src)
 
 include_directories("${SRC_DIR}")
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Charts REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Charts REQUIRED)
@@ -53,11 +50,22 @@ add_library(Controller STATIC
 
 target_link_libraries(Controller Model)
 
+
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 add_library(Plot
         ${SRC_DIR}/view/plot.cc
         ${SRC_DIR}/view/plot.h)
 
-target_link_libraries(Plot  Qt${QT_VERSION_MAJOR}::Charts)
+target_link_libraries(Plot Qt${QT_VERSION_MAJOR}::Charts)
+
+add_library(Worker
+        ${SRC_DIR}/concurrency/worker.cc
+        ${SRC_DIR}/concurrency/worker.h)
+
+target_link_libraries(Worker)
 
 set(PROJECT_SOURCES
         ${SRC_DIR}/main.cc
@@ -83,7 +91,11 @@ else()
     endif()
 endif()
 
-target_link_libraries(MonitoringSystem PRIVATE Plot TelegramBot Controller
+target_link_libraries(MonitoringSystem PRIVATE
+                       Plot
+                       TelegramBot
+                       Worker
+                       Controller
                        Qt${QT_VERSION_MAJOR}::Widgets)
 
 set_target_properties(MonitoringSystem PROPERTIES

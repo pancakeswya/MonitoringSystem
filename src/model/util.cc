@@ -72,7 +72,7 @@ std::pair<bool, SystemConfig> ParseConfig(const std::string& path) {
     std::string field_name = line.substr(0, i++);
     i += SkipSpace(&line[i]);
     if (field_name == "name") {
-      last_name = line.substr(i, line.size() - i - 1);
+      last_name = line.substr(i, line.size() - i);
       continue;
     }
     if (last_name.empty()) {

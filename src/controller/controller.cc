@@ -14,6 +14,10 @@ void Controller::UpdateConfig(const SystemConfig& config) {
   model_->UpdateConfig(config);
 }
 
+SystemConfig Controller::GetConfig() noexcept {
+  return model_->GetConfig();
+}
+
 Metrics Controller::GetMetrics() noexcept {
   model_->UpdateMetrics();
   return model_->GetMetrics();

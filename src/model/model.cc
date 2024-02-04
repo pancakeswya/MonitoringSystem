@@ -164,6 +164,21 @@ void Model::UpdateMetrics() {
   cv_.notify_all();
 }
 
+SystemConfig Model::GetConfig() noexcept {
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
+
+  state_ = State::kIoBusy;
+  cv_.notify_all();
+
+  SystemConfig config = config_;
+
+  state_ = State::kIoFree;
+  cv_.notify_all();
+
+  return config;
+}
+
 void Model::UpdateConfig(const SystemConfig &config) {
   std::unique_lock<std::mutex> lock(mutex_);
   cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });

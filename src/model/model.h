@@ -26,6 +26,7 @@ class Model {
   void LoadAgents();
   void UpdateMetrics();
   void UpdateConfig(const SystemConfig& config);
+  SystemConfig GetConfig() noexcept;
 
   Metrics GetMetrics() noexcept;
  private:

@@ -1,7 +1,8 @@
-#ifndef MONITORINGVIEW_H
-#define MONITORINGVIEW_H
+#ifndef MONITORINGSYSTEM_SRC_VIEW_MONITORINGVIEW_H
+#define MONITORINGSYSTEM_SRC_VIEW_MONITORINGVIEW_H
 
 #include "view/plot.h"
+#include "concurrency/worker.h"
 #include "controller/controller.h"
 #include "tools/telegram_bot.h"
 
@@ -39,16 +40,21 @@ private:
     };
 
     void Setup();
+    void StartMonitoring();
+    void UpdateMetrics();
+    void UpdateCharts();
+
 
     Controller* controller_{};
     TelegramBot bot_;
 
     Plot plots_[kPlotsSize];
     QDateTime timer_;
+    Worker metrics_worker_;
 
     Ui::MonitoringView *ui_;
 };
 
 } // namespace monsys
 
-#endif // MONITORINGVIEW_H
+#endif // MONITORINGSYSTEM_SRC_VIEW_MONITORINGVIEW_H
