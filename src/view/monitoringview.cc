@@ -10,7 +10,8 @@ namespace monsys {
 
 namespace {
 
-inline void SetupChartView(QChartView* view, Plot& plot) {
+inline void SetupChartView(const QString& title, QChartView* view, Plot& plot) {
+    plot.SetTitle(title);
     view->setVisible(true);
     view->setRenderHint(QPainter::Antialiasing, true);
     view->setChart(plot.Chart());
@@ -33,22 +34,37 @@ MonitoringView::MonitoringView(Controller* controller)
     StartMonitoring();
 }
 
+void MonitoringView::resizeEvent(QResizeEvent*) {
+    UpdateSize();
+}
+
+void MonitoringView::UpdateSize() {
+    QSize size = ui_->cpu_load_view->size();
+
+    ui_->ram_total_view->setMinimumSize(size);
+    ui_->ram_view->setMinimumSize(size);
+    ui_->hard_volume_view->setMinimumSize(size);
+    ui_->hard_ops_view->setMinimumSize(size);
+    ui_->hard_throughput_view->setMinimumSize(size);
+    ui_->url_available_view->setMinimumSize(size);
+    ui_->inet_throughput_view->setMinimumSize(size);
+}
+
 void MonitoringView::Setup() {
-    SetupChartView(ui_->cpu_load_view, plots_[kCpuLoadPlot]);
-    SetupChartView(ui_->cpu_process_view, plots_[kCpuProcessPlot]);
+    SetupChartView("Load", ui_->cpu_load_view, plots_[kCpuLoadPlot]);
+    SetupChartView("Process", ui_->cpu_process_view, plots_[kCpuProcessPlot]);
 
-    SetupChartView(ui_->ram_total_view, plots_[kRamTotalPlot]);
-    SetupChartView(ui_->ram_view, plots_[kRamPlot]);
-    SetupChartView(ui_->hard_volume_view, plots_[kHardVolumePlot]);
-    SetupChartView(ui_->hard_ops_view, plots_[kHardOpsPlot]);
-    SetupChartView(ui_->hard_throughput_view, plots_[kHardThroughputPlot]);
+    SetupChartView("Ram total", ui_->ram_total_view, plots_[kRamTotalPlot]);
+    SetupChartView("Ram", ui_->ram_view, plots_[kRamPlot]);
+    SetupChartView("Hard volume", ui_->hard_volume_view, plots_[kHardVolumePlot]);
+    SetupChartView("Hard ops", ui_->hard_ops_view, plots_[kHardOpsPlot]);
+    SetupChartView("Hard throughput", ui_->hard_throughput_view, plots_[kHardThroughputPlot]);
 
-    SetupChartView(ui_->url_available_view, plots_[kUrlAvailablePlot]);
-    SetupChartView(ui_->inet_throughput_view, plots_[kInetThroughputPlot]);
+    SetupChartView("Url available", ui_->url_available_view, plots_[kUrlAvailablePlot]);
+    SetupChartView("Inet throughput", ui_->inet_throughput_view, plots_[kInetThroughputPlot]);
 
-    controller_->OnException([&](const std::string& error) {
-        bot_.SendText(error);
-        QMessageBox::critical(this, "Error", QString::fromStdString(error));
+    controller_->OnException([&bot = bot_](const std::string& error) {
+        bot.SendText(error);
     });
 }
 

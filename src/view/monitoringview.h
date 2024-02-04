@@ -23,8 +23,10 @@ public:
     ~MonitoringView();
 
 private:
-    static constexpr size_t kTeleChatId = 2;
-    static inline const std::string kTeleToken = "";
+    void resizeEvent(QResizeEvent*) override;
+
+    static constexpr size_t kTeleChatId = 961646986;
+    static inline const std::string kTeleToken = "6639133805:AAF_DKy2Uq_Zes87Cevbg2f4YqBK11-pNDI";
 
     enum PlotType {
       kCpuLoadPlot = 0,
@@ -41,6 +43,7 @@ private:
 
     void Setup();
     void StartMonitoring();
+    void UpdateSize();
     void UpdateMetrics();
     void UpdateCharts();
 

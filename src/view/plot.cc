@@ -13,18 +13,11 @@ Plot::Plot() : line_series_(new QLineSeries),
 }
 
 void Plot::Setup() {
-    const QFont font("Sans Serif");
-
-    chart_->setTitleFont(font);
     chart_->legend()->hide();
 
-    x_axis_->setTitleText("Time");
-    x_axis_->setTitleFont(font);
     x_axis_->setFormat("hh:mm:ss,z");
     x_axis_->setTickCount(5);
 
-    y_axis_->setTitleText("Cpu");
-    y_axis_->setTitleFont(font);
     y_axis_->setLabelFormat("%.1f");
     y_axis_->setTickCount(10);
 
@@ -44,6 +37,10 @@ void Plot::Setup() {
     area_series_->setBrush(gradient);
     area_series_->attachAxis(x_axis_);
     area_series_->attachAxis(y_axis_);
+}
+
+void Plot::SetTitle(const QString& title) {
+    chart_->setTitle(title);
 }
 
 void Plot::AddValue(qreal x, qreal y, const Range& range_y) {

@@ -2,6 +2,7 @@
 #define MONITORINGSYSTEM_SRC_VIEW_PLOT_H_
 
 #include <QtCharts/QtCharts>
+#include <QString>
 
 namespace monsys {
 
@@ -14,6 +15,7 @@ public:
 
     Plot();
     ~Plot();
+    void SetTitle(const QString& title);
     void AddValue(qreal x, qreal y, const Range& range_y);
     QChart* Chart() const noexcept;
 private:

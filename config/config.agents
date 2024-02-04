@@ -6,12 +6,12 @@ timeout: 1000
 
 name: cpu
 type: cpu_agent
-range: < 90
+range: =< 100
 timeout: 990000
 
 name: processes
 type: cpu_agent
-range: < 50000
+range: < 30000
 timeout: 990000
 
 name: ram_total
@@ -21,12 +21,12 @@ timeout: 990000
 
 name: ram
 type: memory_agent
-range: >= 0, <= 90
+range: >= 0, =< 100
 timeout: 990000
 
 name: hard_volume
 type: memory_agent
-range: >= 0, <= 80
+range: >= 0, =< 80
 timeout: 990000
 
 name: hard_ops
@@ -36,12 +36,12 @@ timeout: 990000
 
 name: hard_throughput
 type: memory_agent
-range: > 2500
+range: > 10, < 50003423243
 timeout: 990000
 
 name: url
 type: network_agent:ya.ru
-range: >= 0, <= 1
+range: >= 0, =< 1
 timeout: 990000
 
 name: inet_throughput

@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include <iostream>
+
 namespace monsys::util {
 
 namespace {
@@ -79,20 +81,35 @@ std::pair<bool, SystemConfig> ParseConfig(const std::string& path) {
       continue;
     }
     if (field_name == "type") {
-      config[last_name].type = line.substr(i + 1, line.size() - i - 1);
+      config[last_name].type = line.substr(i, line.size() - i);
     } else if (field_name == "range") {
       auto&[min, max] = config[last_name].range;
-      if (line[i] == '>') {
-        min = std::strtod(&line[i + 1], nullptr);
-      } else if (line[i] == '<') {
-        max = std::strtod(&line[i + 1], nullptr);
-      } else if (line[i] == '=' && line[i + 1] == '=') {
-        double val = std::strtod(&line[i + 2], nullptr);
-        min = val - 1;
-        max = val + 1;
+      while(i < line.size()) {
+          size_t parsed_size = 1;
+          if (line[i] == '>') {
+            if (line[i + 1] == '=') {
+                i += 2;
+                min = std::stod(&line[i], &parsed_size) - 1;
+            } else {
+                min = std::stod(&line[++i], &parsed_size);
+            }
+          } else if (line[i] == '<') {
+            max = std::stod(&line[++i], &parsed_size);
+          } else if (line[i] == '=') {
+              if (line[i + 1] == '=') {
+                  i += 2;
+                  double val = std::stod(&line[i], &parsed_size);
+                  min = val - 1;
+                  max = val + 1;
+              } else if (line[i + 1] == '<') {
+                  i += 2;
+                  max = std::stod(&line[i], &parsed_size) + 1;
+              }
+          }
+          i += parsed_size;
       }
     } else if (field_name == "timeout") {
-      config[last_name].timeout = std::strtoul(&line[i], nullptr, 10);
+      config[last_name].timeout = std::stoul(&line[i]);
     }
   }
   return {true, config};
