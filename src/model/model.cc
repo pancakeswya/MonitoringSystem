@@ -3,6 +3,8 @@
 #include "logger/logger.h"
 
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <functional>
 #include <thread>
 #include <utility>
@@ -12,32 +14,9 @@ namespace monsys {
 
 namespace {
 
-#define STRING(x) #x
-#define XSTRING(x) STRING(x)
-
-#ifndef LOG_PATH
-#error "specify log path"
-#else
-constexpr std::string_view kLogPath = XSTRING(LOG_PATH);
-#undef LOG_PATH
-#endif
-  
-#ifndef CONFIG_PATH
-#error "specify config path"
-#else
-constexpr std::string_view kConfigPath = XSTRING(CONFIG_PATH);
-#undef CONFIG_PATH
-#endif
-
-#ifndef AGENTS_PATH
-#error "specify agents path"
-#else
-constexpr std::string_view kAgentsPath = XSTRING(AGENTS_PATH);
-#undef AGENTS_PATH
-#endif
-
-#undef STRING
-#undef XSTRING
+constexpr std::string_view kLogPathEnv = "LOG_PATH";
+constexpr std::string_view kAgentsPathEnv = "AGENTS_PATH";
+constexpr std::string_view kConfigPathEnv = "CONFIG_PATH";
 
 template<typename Tp>
 inline Error BuildAgent(Tp& agent, Dll& dll, const std::string& dll_path) noexcept {
@@ -79,11 +58,11 @@ inline std::function<void()> MakeMetricCallback(Tp& metric, Error& error, MaxRan
 
 } // namespace
 
-Model::~Model() {
-  config::Write(config_, kConfigPath.data());
-}
-
 void Model::LogMetrics() {
+  const std::string_view kLogPath = std::getenv(kLogPathEnv.data());
+  if (!std::filesystem::exists(kLogPath)) {
+    return;
+  }
   std::unique_lock<std::mutex> lock(mutex_);
   Logger::Log(kLogPath.data()) << "cpu_load" << metrics_.cpu_load << "cpu_processes" << metrics_.cpu_processes
                                << "ram" << metrics_.ram << "ram_total" << metrics_.ram_total << "hard_ops" << metrics_.hard_ops
@@ -94,6 +73,11 @@ void Model::LogMetrics() {
 
 Model::ErrorMap Model::LoadAgents() {
   Reset();
+  std::string_view kAgentsPath = std::getenv(kAgentsPathEnv.data());
+  if (!std::filesystem::exists(kAgentsPath)) {
+    error_state_ = true;
+    return {{"LoadAgents", Error("Invalid path")}};
+  }
   std::unique_lock<std::mutex> lock(mutex_);
   return {
       {agents::names::kCpu, BuildCpuAgent(kAgentsPath.data() + agents::names::kCpuDll)},
@@ -103,11 +87,12 @@ Model::ErrorMap Model::LoadAgents() {
 }
 
 Error Model::LoadConfig() {
-  auto[loaded, config] = config::Read(kConfigPath.data());
+  auto[loaded, config] = config::Read(std::getenv(kConfigPathEnv.data()));
+  std::unique_lock<std::mutex> lock(mutex_);
   if (!loaded) {
+    error_state_ = true;
     return Error("Config not loaded");
   }
-  std::unique_lock<std::mutex> lock(mutex_);
   config_ = config;
   return nullerr_t;
 }
@@ -142,6 +127,9 @@ Model::ErrorMap Model::UpdateMetrics() {
       {agents::UrlAvailableFn::kName, nullerr_t},
       {agents::InetThroughputFn::kName, nullerr_t}
   };
+  if (error_state_) {
+    return errors;
+  }
   std::array calls = {
       /*----------------|--------METRIC_REF---------|-------------------ERROR_REF-------------------|-------------MAX_ACCEPTED_RANGE-----------|-----------METRIC_COLLECT_TIMEOUT----------|--------METRIC_COLLECT_FN----------|---------OPTIONAL_PARAMS_IN_COLLECT_FN-------|*/
       MakeMetricCallback(metrics_.cpu_load,/*-------|*/errors.at(agents::CpuLoadFn::kName),/*-------|*/config_.cpu.load.range,/*---------------|*/1,/*-------------------------------------|*/cpu_agent_.cpu_load,/*-----------|*/config_.cpu.load.timeout/*-----------------|*/),

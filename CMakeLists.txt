@@ -88,8 +88,3 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(MonitoringSystem)
 endif()
 
-add_compile_definitions("LOG_PATH=${CMAKE_SOURCE_DIR}/log/metrics.logs"
-        "AGENTS_PATH=${CMAKE_SOURCE_DIR}/src/agents/core/build"
-        "CONFIG_PATH=${CMAKE_SOURCE_DIR}/config/agents.conf"
-        "LOGGING_DELAY=1000"
-        "AGENTS_DELAY=3000")

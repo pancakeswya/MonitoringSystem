@@ -1,7 +1,8 @@
 #include "view/monitoringview.h"
 #include "view/ui_monitoringview.h"
 
-#include <chrono>
+#include <cstdlib>
+#include <string>
 #include <thread>
 
 #include <QDateTime>
@@ -11,19 +12,8 @@ namespace monsys {
 
 namespace {
 
-#ifndef LOGGING_DELAY
-#error "specify log delay"
-#else
-constexpr unsigned int kLoggingDelay = LOGGING_DELAY;
-#undef LOGGING_DELAY
-#endif
-
-#ifndef AGENTS_DELAY
-#error "specify agents delay"
-#else
-constexpr unsigned int kAgentsDelay = AGENTS_DELAY;
-#undef AGENTS_DELAY
-#endif
+constexpr std::string_view kLoggingDelayEnv = "LOGGING_DELAY";
+constexpr std::string_view kAgentsDelayEnv = "AGENTS_DELAY";
 
 inline void SetupChartView(const QString& title, QChartView* view, Plot& plot) {
     plot.SetTitle(title);
@@ -53,7 +43,7 @@ void MonitoringView::resizeEvent(QResizeEvent*) {
 }
 
 void MonitoringView::UpdateSize() {
-    QSize size = ui_->cpu_load_view->size();
+    const QSize size = ui_->cpu_load_view->size();
 
     ui_->ram_total_view->setMinimumSize(size);
     ui_->ram_view->setMinimumSize(size);
@@ -85,14 +75,25 @@ void MonitoringView::Setup() {
 
 void MonitoringView::StartMonitoring() {
     if (!controller_->LoadConfig()) {
+      QMessageBox::critical(this, "Error", "Config not loaded");
       return;
     }
-    loader_worker_.SetTimeout(kAgentsDelay);
-    logger_worker_.SetTimeout(kLoggingDelay);
+    const std::string_view kLoggingDelay = std::getenv(kLoggingDelayEnv.data());
+    if (kLoggingDelay.empty()) {
+      QMessageBox::critical(this, "Error", "No logging delay");
+      return;
+    }
+    const std::string_view kAgentsDelay = std::getenv(kAgentsDelayEnv.data());
+    if (kAgentsDelay.empty()) {
+      QMessageBox::critical(this, "Error", "No agents loading delay");
+      return;
+    }
+    loader_worker_.SetTimeout(std::stoul(kLoggingDelay.data()));
+    logger_worker_.SetTimeout(std::stoul(kAgentsDelay.data()));
 
-    loader_worker_.SetWork([&]{ controller_->LoadAgents(); });
-    metrics_worker_.SetWork([&] { UpdateMetrics(); });
-    logger_worker_.SetWork([&]{ controller_->LogMetrics(); });
+    loader_worker_.SetWork(&Controller::LoadAgents, controller_);
+    metrics_worker_.SetWork(&MonitoringView::UpdateMetrics, this);
+    logger_worker_.SetWork(&Controller::LogMetrics, controller_);
 
     loader_worker_.Start();
     metrics_worker_.Start();
@@ -138,8 +139,8 @@ inline void MonitoringView::UpdatePlots(qint64 curr_time, const Metrics& metrics
 }
 
 void MonitoringView::UpdateMetrics() {
-    Config config = controller_->GetConfig();
-    Metrics metrics = controller_->CollectMetrics();
+    const Config config = controller_->GetConfig();
+    const Metrics metrics = controller_->CollectMetrics();
 
     qint64 curr_time = QDateTime::currentDateTime().toMSecsSinceEpoch();
 

@@ -13,10 +13,15 @@ namespace monsys {
 
 class Logger {
  public:
-  static constexpr char endlog = '\n';
+  static struct EndLog {
+   private:
+    friend Logger;
+    static constexpr char end = '\n';
+  } endlog;
 
   static Logger& Log(const std::string& path) {
-    static Logger logger(path);
+    static Logger logger;
+    logger.ofs_.open(path, std::ofstream::app);
     logger.ofs_ << '[' << GetCurrentTime() << "] ";
     return logger;
   }
@@ -32,20 +37,18 @@ class Logger {
     return logger;
   }
 
-  friend Logger& operator<<(Logger& logger, char symbol) {
-    logger.ofs_ << "|" << symbol;
-    return logger;
+  friend void operator<<(Logger& logger, EndLog) {
+     logger.ofs_ << "|" << EndLog::end;
+     logger.ofs_.close();
   }
 
  private:
   std::ofstream ofs_;
 
-  explicit Logger(const std::string& path) {
-    ofs_.open(path, std::fstream::app);
-  }
-
   ~Logger() {
-    ofs_.close();
+    if (ofs_.is_open()) {
+      ofs_.close();
+    }
   }
 
   static std::string GetCurrentTime() {

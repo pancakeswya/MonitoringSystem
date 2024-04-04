@@ -17,9 +17,6 @@ class Model {
  public:
   using ErrorMap = std::unordered_map<std::string_view, Error>;
 
-  Model() = default;
-  ~Model();
-
   void LogMetrics();
   Error LoadConfig();
   ErrorMap LoadAgents();
@@ -37,6 +34,7 @@ class Model {
   Error BuildNetworkAgent(const std::string& dll_path) noexcept;
 
   std::mutex mutex_;
+  bool error_state_ = false;
 
   agents::Cpu cpu_agent_ = {};
   agents::Memory memory_agent_ = {};

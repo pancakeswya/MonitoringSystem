@@ -16,10 +16,6 @@ void Worker::SetTimeout(unsigned int timeout) noexcept {
   timeout_ = timeout;
 }
 
-void Worker::SetWork(Work work) noexcept {
-  work_ = std::move(work);
-}
-
 void Worker::Start() {
   std::thread(&Worker::DoWork, this).detach();
 }

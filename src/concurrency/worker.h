@@ -9,10 +9,14 @@ namespace monsys {
 class Worker {
  public:
   using Work = std::function<void()>;
+
   Worker();
   ~Worker();
+
+  template<typename F, typename... Args>
+  void SetWork(F&& f, Args... args);
   void SetTimeout(unsigned int timeout) noexcept;
-  void SetWork(Work work) noexcept;
+
   void Start();
  private:
   void DoWork();
@@ -21,6 +25,11 @@ class Worker {
   unsigned int timeout_;
   Work work_;
 };
+
+template<typename F, typename... Args>
+inline void Worker::SetWork(F&& f, Args... args) {
+  work_ = std::bind(f, args...);
+}
 
 } // monsys
 
