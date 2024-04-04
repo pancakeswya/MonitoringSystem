@@ -1,43 +1,36 @@
 #include "concurrency/worker.h"
 
+#include <chrono>
 #include <thread>
-#include <iostream>
 
 namespace monsys {
 
-Worker::Worker() : working_(false), alive_(true) {}
-
-Worker::Worker(WorkCallback work) noexcept : Worker() {
-    work_ = std::move(work);
-}
+Worker::Worker() : working_(false), alive_(true), timeout_(1) {}
 
 Worker::~Worker() {
-    alive_ = false;
-    std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait(lock, [&state = working_] { return state == false; });
+  alive_ = false;
+  while(working_);
 }
 
-void Worker::SetWork(WorkCallback work) noexcept {
-    work_ = std::move(work);
+void Worker::SetTimeout(unsigned int timeout) noexcept {
+  timeout_ = timeout;
+}
+
+void Worker::SetWork(Work work) noexcept {
+  work_ = std::move(work);
 }
 
 void Worker::Start() {
-    std::thread work_thread(&Worker::DoWork, this);
-    work_thread.detach();
+  std::thread(&Worker::DoWork, this).detach();
 }
 
 void Worker::DoWork() {
-    while(alive_) {
-        std::unique_lock<std::mutex> lock(mutex_);
-
-        working_ = true;
-        cv_.notify_one();
-
-        work_();
-
-        working_ = false;
-        cv_.notify_one();
-    }
+  working_ = true;
+  while(alive_) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(timeout_));
+    work_();
+  }
+  working_ = false;
 }
 
 } // namespace monsys

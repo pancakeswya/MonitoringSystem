@@ -3,27 +3,23 @@
 
 #include <atomic>
 #include <functional>
-#include <condition_variable>
-#include <mutex>
 
 namespace monsys {
 
-using WorkCallback = std::function<void()>;
-
 class Worker {
-public:
-    Worker();
-    Worker(WorkCallback work) noexcept;
-    ~Worker();
-    void SetWork(WorkCallback work) noexcept;
-    void Start();
-private:
-    void DoWork();
+ public:
+  using Work = std::function<void()>;
+  Worker();
+  ~Worker();
+  void SetTimeout(unsigned int timeout) noexcept;
+  void SetWork(Work work) noexcept;
+  void Start();
+ private:
+  void DoWork();
 
-    std::atomic<bool> working_, alive_;
-    std::mutex mutex_;
-    std::condition_variable cv_;
-    WorkCallback work_;
+  std::atomic<bool> working_, alive_;
+  unsigned int timeout_;
+  Work work_;
 };
 
 } // monsys

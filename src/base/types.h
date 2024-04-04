@@ -1,104 +1,58 @@
 #ifndef MONITORINGSYSTEM_SRC_BASE_TYPES_H_
 #define MONITORINGSYSTEM_SRC_BASE_TYPES_H_
 
+#include <cstddef>
 #include <string>
-#include <functional>
-#include <limits>
+#include <utility>
 
 namespace monsys {
 
-constexpr const char kCpuAgentName[] = "cpu_agent",
-                     kMemoryAgentName[] = "memory_agent",
-                     kNetworkAgentName[] = "network_agent";
-
-enum class AgentStatus : unsigned char {
-  kOk,
-  kNotLoaded,
-  kAlreadyActive,
-  kInvalidDeactivate
-};
-
-enum class MetricStatus : unsigned char {
-  kOk,
-  kOutOfRange,
-  kInvalidUrl
-};
-
-struct AgentResponse {
-  AgentStatus status;
-  std::string name;
-};
-
-struct MetricResponse {
-  MetricStatus status;
-  std::string name;
-  std::string type;
-};
-
 struct Metrics {
   double cpu_load;
-  size_t cpu_processes;
-
   double ram_total;
   double ram;
   double hard_volume;
-  size_t hard_ops;
   double hard_throughput;
-
   double inet_throughput;
+  size_t hard_ops;
+  size_t cpu_processes;
   int url_available;
 };
 
-struct MetricConfig {
-  static constexpr unsigned int default_timeout = 990000;
+using MaxRange = std::pair<double, double>;
 
-  std::string type{};
-  std::pair<double, double> range{0.0, std::numeric_limits<double>::max()};
-  unsigned int timeout = default_timeout;
+struct MetricConfig {
+  MaxRange range;
+  unsigned int timeout;
 };
 
-using SystemConfig = std::unordered_map<std::string, MetricConfig>;
+struct UrlMetricConfig : public MetricConfig {
+  std::string url;
+};
 
-using ExceptionCallback = std::function<void(const std::string&)>;
+struct CpuConfig {
+  MetricConfig load;
+  MetricConfig processes;
+};
 
-namespace {
+struct MemoryConfig {
+  MetricConfig ram;
+  MetricConfig ram_total;
+  MetricConfig hard_volume;
+  MetricConfig hard_ops;
+  MetricConfig hard_throughput;
+};
 
-inline SystemConfig DefaultConfig() noexcept {
-  return {
-      {"logger", {
-        .range = {}
-      }},
-      {"cpu", {
-          .type = "cpu_agent"
-      }},
-      {"processes", {
-          .type = "cpu_agent"
-      }},
-      {"ram_total", {
-          .type = "memory_agent"
-      }},
-      {"ram", {
-          .type = "memory_agent"
-      }},
-      {"hard_volume", {
-          .type = "memory_agent"
-      }},
-      {"hard_ops", {
-          .type = "memory_agent"
-      }},
-      {"hard_throughput", {
-          .type = "memory_agent"
-      }},
-      {"inet_throughput", {
-          .type = "network_agent"
-      }},
-      {"url",
-       {.type = "network_agent:ya.ru"}
-      }
-  };
-}
+struct NetworkConfig {
+  UrlMetricConfig url_available;
+  MetricConfig inet_throughout;
+};
 
-} // namespace
+struct Config {
+  CpuConfig cpu;
+  MemoryConfig memory;
+  NetworkConfig network;
+};
 
 } // namespace monsys
 

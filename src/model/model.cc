@@ -1,346 +1,174 @@
 #include "model/model.h"
-#include "model/util.h"
-#include "base/logger.h"
+#include "base/config.h"
+#include "logger/logger.h"
 
+#include <chrono>
+#include <functional>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace monsys {
 
 namespace {
 
+#define STRING(x) #x
+#define XSTRING(x) STRING(x)
+
+#ifndef LOG_PATH
+#error "specify log path"
+#else
+constexpr std::string_view kLogPath = XSTRING(LOG_PATH);
+#undef LOG_PATH
+#endif
+  
+#ifndef CONFIG_PATH
+#error "specify config path"
+#else
+constexpr std::string_view kConfigPath = XSTRING(CONFIG_PATH);
+#undef CONFIG_PATH
+#endif
+
+#ifndef AGENTS_PATH
+#error "specify agents path"
+#else
+constexpr std::string_view kAgentsPath = XSTRING(AGENTS_PATH);
+#undef AGENTS_PATH
+#endif
+
+#undef STRING
+#undef XSTRING
+
 template<typename Tp>
-inline std::pair<MetricStatus, Tp> RangeBoundsCheck(Tp val, std::pair<double, double> range) noexcept {
-  static_assert(std::is_arithmetic_v<Tp>, "Must be arithmetic type");
-  if (val < range.first || val > range.second) {
-    return {MetricStatus::kOutOfRange, {}};
+inline Error BuildAgent(Tp& agent, Dll& dll, const std::string& dll_path) noexcept {
+  if (Error err = dll.Load(dll_path); err) {
+    return err;
   }
-  return {MetricStatus::kOk, val};
+  auto[tmp_agent, err] = agents::Builder::Build<Tp>(dll);
+  if (err) {
+    return err;
+  }
+  agent = tmp_agent;
+  return nullerr_t;
 }
 
-inline std::string GetUrl(const std::string &type) {
-  size_t pos = type.find(':');
-  if (pos == std::string::npos) {
-    return "";
+template<typename Tp, typename... Args>
+inline std::pair<Tp, Error> CollectMetric(CoreError (*metric_fn)(Tp*, Args...), Args... args) noexcept {
+  Tp metric;
+  if (CoreError err = metric_fn(&metric, args...); err != kCoreErrorSuccess) {
+    return {{}, Error(kCoreErrorsStr[err])};
   }
-  return type.substr(pos + 1);
+  return {metric, nullerr_t};
+}
+
+template<typename Tp, typename... Args>
+inline std::function<void()> MakeMetricCallback(Tp& metric, Error& error, MaxRange range, unsigned int timeout, CoreError (*metric_fn)(Tp*, Args...), Args... args) noexcept {
+  return [&metric, &error, range, timeout, metric_fn, args...] () mutable noexcept {
+    std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+    auto[tmp_metric, err] = CollectMetric(metric_fn, std::forward<Args>(args)...);
+    if (err) {
+      error = err;
+      return;
+    }
+    if (tmp_metric < range.first || tmp_metric > range.second) {
+      error = Error("Metric out of range");
+    }
+    metric = tmp_metric;
+  };
 }
 
 } // namespace
 
-inline void Model::HandleAgentResponse(const AgentResponse &response) {
-  if (response.status == AgentStatus::kOk) {
-    return;
-  }
-  std::string error_str = "Agent name: " + response.name +
-      "\nError: " + util::GetStatusString(response.status);
-  exception_callback_(error_str);
-  Logger::Log() << error_str << Logger::endlog;
-}
-
-inline void Model::HandleMetricsResponse(const MetricResponse &response) {
-  if (response.status == MetricStatus::kOk) {
-    return;
-  }
-  std::string error_str = "Agent name: " + response.name +
-      "\nAgent type: " + response.type +
-      "\nError: " + util::GetStatusString(response.status);
-  exception_callback_(error_str);
-  Logger::Log() << error_str << Logger::endlog;
-}
-
-template<typename Callback>
-inline auto Model::ExecuteAgent(Callback callback, const char *name) {
-  MetricConfig metric_config = config_[name];
-  auto curr_val = callback(metric_config.timeout);
-  auto [stat, res_val] = RangeBoundsCheck(curr_val, metric_config.range);
-  return std::pair<decltype(res_val), MetricResponse>{res_val,
-                                                      {.status = stat,
-                                                          .name = name,
-                                                          .type = metric_config.type
-                                                      }};
-}
-
-template<typename Tp>
-inline AgentResponse Model::LoadAgent(Tp &agent, const char *name) {
-  AgentStatus stat = handler_.ActivateAgent<Tp>();
-  if (stat == AgentStatus::kOk) {
-    agent = builder_.BuildAgent<Tp>();
-  }
-  Logger::Log() << "Agent" << name << "loaded with status" << util::GetStatusString(stat) << Logger::endlog;
-  return {stat, name};
-}
-
-void Model::LogMetrics(size_t delay) {
-  for (;;) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
-                                  [&state = state_] { return state == State::kLoggerTerminate; });
-    if (terminate) {
-      state_ = State::kLoggerStopped;
-      cv_.notify_all();
-      return;
-    }
-
-    cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-    state_ = State::kIoBusy;
-    cv_.notify_all();
-
-    Logger::Log() << "cpu_load" << metrics_.cpu_load << "cpu_processes" << metrics_.cpu_processes
-                  << "ram" << metrics_.ram << "ram_total" << metrics_.ram_total << "hard_ops" << metrics_.hard_ops
-                  << "hard_volume" << metrics_.hard_volume << "hard_throughput" << metrics_.hard_throughput
-                  << "url_available" << metrics_.url_available << "inet_throughput" << metrics_.inet_throughput
-                  << Logger::endlog;
-
-    state_ = State::kIoFree;
-    cv_.notify_all();
-  }
-}
-
-AgentResponse Model::SetConfig(const std::string &config_path) {
-  constexpr const char name[] = "config";
-  auto [ok, conf] = util::ParseConfig(config_path);
-  if (!ok) {
-    return {AgentStatus::kNotLoaded, name};
-  }
-  config_ = std::move(conf);
-
-  std::thread log_thread(&Model::LogMetrics, this, config_["logger"].timeout);
-  log_thread.detach();
-
-  return {AgentStatus::kOk, name};
-}
-
-Model::Model() noexcept: state_(State::kIoFree),
-                         builder_(&handler_) {
-  util::CreateDirectory(paths::kLogs);
-}
-
 Model::~Model() {
+  config::Write(config_, kConfigPath.data());
+}
+
+void Model::LogMetrics() {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-  state_ = State::kLoggerTerminate;
-  cv_.notify_all();
-  cv_.wait(lock, [&state = state_] { return state == State::kLoggerStopped; });
-
-  state_ = State::kLoadTerminate;
-  cv_.notify_all();
-  cv_.wait(lock, [&state = state_] { return state == State::kLoadStopped; });
+  Logger::Log(kLogPath.data()) << "cpu_load" << metrics_.cpu_load << "cpu_processes" << metrics_.cpu_processes
+                               << "ram" << metrics_.ram << "ram_total" << metrics_.ram_total << "hard_ops" << metrics_.hard_ops
+                               << "hard_volume" << metrics_.hard_volume << "hard_throughput" << metrics_.hard_throughput
+                               << "url_available" << metrics_.url_available << "inet_throughput" << metrics_.inet_throughput
+                               << Logger::endlog;
 }
 
-void Model::SetExceptionCallback(ExceptionCallback callback) noexcept {
-  exception_callback_ = std::move(callback);
+Model::ErrorMap Model::LoadAgents() {
+  Reset();
+  std::unique_lock<std::mutex> lock(mutex_);
+  return {
+      {agents::names::kCpu, BuildCpuAgent(kAgentsPath.data() + agents::names::kCpuDll)},
+      {agents::names::kMemory, BuildMemoryAgent(kAgentsPath.data() + agents::names::kMemoryDll)},
+      {agents::names::kNetwork, BuildNetworkAgent(kAgentsPath.data() + agents::names::kNetworkDll)}
+  };
 }
 
-void Model::LoadAgents() {
-  {
-    AgentResponse response = SetConfig(paths::kConfig.data());
-    HandleAgentResponse(response);
+Error Model::LoadConfig() {
+  auto[loaded, config] = config::Read(kConfigPath.data());
+  if (!loaded) {
+    return Error("Config not loaded");
   }
-  std::vector<AgentResponse> responses = LoadAgents_();
-  for (const AgentResponse &response : responses) {
-    HandleAgentResponse(response);
-  }
-
-  std::thread load_thread(&Model::LoadAgentsWithDelay, this, config_["load"].timeout);
-  load_thread.detach();
-}
-
-void Model::UpdateMetrics() {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-  state_ = State::kIoBusy;
-  cv_.notify_all();
-
-  std::vector<MetricResponse> responses = UpdateMetrics_();
-  for (const MetricResponse &response : responses) {
-    HandleMetricsResponse(response);
-  }
-
-  state_ = State::kIoFree;
-  cv_.notify_all();
-}
-
-SystemConfig Model::GetConfig() noexcept {
-  std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-  state_ = State::kIoBusy;
-  cv_.notify_all();
-
-  SystemConfig config = config_;
-
-  state_ = State::kIoFree;
-  cv_.notify_all();
-
-  return config;
-}
-
-void Model::UpdateConfig(const SystemConfig &config) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-  state_ = State::kIoBusy;
-  cv_.notify_all();
-
   config_ = config;
-  if (!util::WriteConfig(config, paths::kConfig.data())) {
-    std::string error_str = "Failed to write config";
-    exception_callback_(error_str);
-    Logger::Log() << error_str << Logger::endlog;
-  }
-
-  state_ = State::kIoFree;
-  cv_.notify_all();
+  return nullerr_t;
 }
 
-std::vector<AgentResponse> Model::LoadAgents_() {
-  std::vector<AgentResponse> responses;
-
-  handler_.DeactivateAgent<agents::CPU>();
-  handler_.DeactivateAgent<agents::Memory>();
-  handler_.DeactivateAgent<agents::Network>();
-
-  if (util::FileExists(paths::kAgentCpu.data())) {
-    AgentResponse cpu_response = LoadAgent(cpu_agent_, kCpuAgentName);
-    responses.push_back(cpu_response);
-  }
-
-  if (util::FileExists(paths::kAgentMemory.data())) {
-    AgentResponse memory_response = LoadAgent(memory_agent_, kMemoryAgentName);
-    responses.push_back(memory_response);
-  }
-
-  if (util::FileExists(paths::kAgentNetwork.data())) {
-    AgentResponse network_response = LoadAgent(network_agent_, kNetworkAgentName);
-    responses.push_back(network_response);
-  }
-
-  return responses;
+Config Model::GetConfig() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  return config_;
 }
 
-void Model::LoadAgentsWithDelay(size_t delay) {
-  for (;;) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    bool terminate = cv_.wait_for(lock, std::chrono::milliseconds(delay),
-                                  [&state = state_] { return state == State::kLoadTerminate; });
-    if (terminate) {
-      state_ = State::kLoadStopped;
-      cv_.notify_all();
-      return;
-    }
-
-    cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
-
-    state_ = State::kIoBusy;
-    cv_.notify_all();
-
-    std::vector<AgentResponse> responses = LoadAgents_();
-    for (const AgentResponse &response : responses) {
-      HandleAgentResponse(response);
-    }
-
-    state_ = State::kIoFree;
-    cv_.notify_all();
-  }
-
+inline Error Model::BuildCpuAgent(const std::string& dll_path) noexcept {
+  return BuildAgent(cpu_agent_, cpu_dll_, dll_path);
 }
 
-std::vector<MetricResponse> Model::UpdateMetrics_() {
-  std::vector<MetricResponse> responses(agents::kAgentsAmount,
-                                        MetricResponse{
-                                            .status = MetricStatus::kOk,
-                                            .name = "",
-                                            .type = ""
-                                        }
-  );
-  std::vector<std::thread> threads;
+inline Error Model::BuildMemoryAgent(const std::string& dll_path) noexcept {
+  return BuildAgent(memory_agent_, memory_dll_, dll_path);
+}
 
-  if (handler_.AgentIsActive<agents::CPU>()) {
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(cpu_agent_.cpu_load, "cpu");
-      metrics_.cpu_load = val;
-      responses[0] = std::move(response);
-    });
+inline Error Model::BuildNetworkAgent(const std::string& dll_path) noexcept {
+  return BuildAgent(network_agent_, network_dll_, dll_path);
+}
 
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(cpu_agent_.cpu_process, "process");
-      metrics_.cpu_processes = val;
-      responses[1] = std::move(response);
-    });
-  }
-
-  if (handler_.AgentIsActive<agents::Memory>()) {
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(memory_agent_.ram_total, "ram_total");
-      metrics_.ram_total = val;
-      responses[2] = std::move(response);
-    });
-
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(memory_agent_.ram, "ram");
-      metrics_.ram = val;
-      responses[3] = std::move(response);
-    });
-
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(memory_agent_.hard_ops, "hard_ops");
-      metrics_.hard_ops = val;
-      responses[4] = std::move(response);
-    });
-
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(memory_agent_.hard_volume, "hard_volume");
-      metrics_.hard_volume = val;
-      responses[5] = std::move(response);
-    });
-
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(memory_agent_.hard_throughput, "hard_throughput");
-      metrics_.hard_throughput = val;
-      responses[6] = std::move(response);
-    });
-  }
-
-  if (handler_.AgentIsActive<agents::Network>()) {
-    threads.emplace_back([&] {
-      std::string url = GetUrl(config_["url"].type);
-      auto url_callback = std::bind(network_agent_.url_available, url.c_str(), std::placeholders::_1);
-      auto [val, response] = ExecuteAgent(url_callback, "url");
-      metrics_.url_available = val;
-      responses[7] = std::move(response);
-    });
-
-    threads.emplace_back([&] {
-      auto [val, response] = ExecuteAgent(network_agent_.inet_throughput, "inet_throughput");
-      metrics_.inet_throughput = val;
-      responses[8] = std::move(response);
-    });
-  }
-
-  for (std::thread &thread : threads) {
+Model::ErrorMap Model::UpdateMetrics() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  ErrorMap errors = {
+      {agents::CpuLoadFn::kName, nullerr_t},
+      {agents::CpuProcessesFn::kName, nullerr_t},
+      {agents::RamTotalFn::kName, nullerr_t},
+      {agents::RamFn::kName, nullerr_t},
+      {agents::HardOpsFn::kName, nullerr_t},
+      {agents::HardVolumeFn::kName, nullerr_t},
+      {agents::HardThroughputFn::kName, nullerr_t},
+      {agents::UrlAvailableFn::kName, nullerr_t},
+      {agents::InetThroughputFn::kName, nullerr_t}
+  };
+  std::array calls = {
+      /*----------------|--------METRIC_REF---------|-------------------ERROR_REF-------------------|-------------MAX_ACCEPTED_RANGE-----------|-----------METRIC_COLLECT_TIMEOUT----------|--------METRIC_COLLECT_FN----------|---------OPTIONAL_PARAMS_IN_COLLECT_FN-------|*/
+      MakeMetricCallback(metrics_.cpu_load,/*-------|*/errors.at(agents::CpuLoadFn::kName),/*-------|*/config_.cpu.load.range,/*---------------|*/1,/*-------------------------------------|*/cpu_agent_.cpu_load,/*-----------|*/config_.cpu.load.timeout/*-----------------|*/),
+      MakeMetricCallback(metrics_.cpu_processes,/*--|*/errors.at(agents::CpuProcessesFn::kName),/*--|*/config_.cpu.processes.range,/*----------|*/config_.cpu.processes.timeout,/*---------|*/cpu_agent_.cpu_processes/*-------|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.ram_total,/*------|*/errors.at(agents::RamTotalFn::kName),/*------|*/config_.memory.ram_total.range,/*-------|*/config_.memory.ram_total.timeout,/*------|*/memory_agent_.ram_total/*--------|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.ram,/*------------|*/errors.at(agents::RamFn::kName),/*-----------|*/config_.memory.ram.range,/*-------------|*/config_.memory.ram.timeout,/*------------|*/memory_agent_.ram/*--------------|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.hard_ops,/*-------|*/errors.at(agents::HardOpsFn::kName),/*-------|*/config_.memory.hard_ops.range,/*--------|*/config_.memory.hard_ops.timeout,/*-------|*/memory_agent_.hard_ops/*---------|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.hard_volume,/*----|*/errors.at(agents::HardVolumeFn::kName),/*----|*/config_.memory.hard_volume.range,/*-----|*/config_.memory.hard_volume.timeout,/*----|*/memory_agent_.hard_volume/*------|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.hard_throughput,/*|*/errors.at(agents::HardThroughputFn::kName),/*|*/config_.memory.hard_throughput.range,/*-|*/config_.memory.hard_throughput.timeout,/*|*/memory_agent_.hard_throughput/*--|---------------------------------------------|*/),
+      MakeMetricCallback(metrics_.url_available,/*--|*/errors.at(agents::UrlAvailableFn::kName),/*--|*/config_.network.url_available.range,/*--|*/config_.network.url_available.timeout,/*-|*/network_agent_.url_available,/*--|*/config_.network.url_available.url.c_str()/*|*/),
+      MakeMetricCallback(metrics_.inet_throughput,/*|*/errors.at(agents::InetThroughputFn::kName),/*|*/config_.network.inet_throughout.range,/*|*/1,/*-------------------------------------|*/network_agent_.inet_throughput,/*|*/config_.network.inet_throughout.timeout/*--|*/)
+  };
+  std::vector<std::thread> threads(calls.begin(), calls.end());
+  for(std::thread& thread : threads) {
     thread.join();
   }
-
-  return responses;
+  return errors;
 }
 
-Metrics Model::GetMetrics() noexcept {
+void Model::SetConfig(const Config& config) {
   std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [&state = state_] { return state == State::kIoFree; });
+  config_ = config;
+}
 
-  state_ = State::kIoBusy;
-  cv_.notify_all();
-
-  Metrics metrics = metrics_;
-
-  state_ = State::kIoFree;
-  cv_.notify_all();
-
-  return metrics;
+Metrics Model::GetMetrics() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  return metrics_;
 }
 
 } // namespace monsys

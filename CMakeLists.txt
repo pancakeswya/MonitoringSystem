@@ -1,4 +1,3 @@
-# please use makefile for building or define variables that are in add_compile_definitions
 cmake_minimum_required(VERSION 3.28)
 project(MonitoringSystem VERSION 1.0)
 
@@ -21,35 +20,32 @@ find_package(CURL REQUIRED)
 add_subdirectory(src/agents/core)
 
 add_library(TelegramBot STATIC
-        ${SRC_DIR}/tools/telegram_bot.cc
-        ${SRC_DIR}/tools/telegram_bot.h)
+        ${SRC_DIR}/telegram/telegram_bot.cc
+        ${SRC_DIR}/telegram/telegram_bot.h)
 
 target_link_libraries(TelegramBot CURL::libcurl)
 
-add_library(AgentsHandler STATIC
-        ${SRC_DIR}/agents/handler.cc
-        ${SRC_DIR}/agents/handler.h)
+add_library(Config
+        ${SRC_DIR}/base/config.h
+        ${SRC_DIR}/base/config.cc)
 
-add_library(AgentsBuilder STATIC
-        ${SRC_DIR}/agents/builder.cc
-        ${SRC_DIR}/agents/builder.h)
+add_library(Agents
+        ${SRC_DIR}/agents/agents.h
+        ${SRC_DIR}/agents/agents.cc
+        ${SRC_DIR}/agents/dll.h
+        ${SRC_DIR}/agents/dll.cc)
 
-add_library(ModelUtil STATIC
-        ${SRC_DIR}/model/util.cc
-        ${SRC_DIR}/model/util.h)
+add_library(Model
+        ${SRC_DIR}/model/model.h
+        ${SRC_DIR}/model/model.cc)
 
-add_library(Model STATIC
-        ${SRC_DIR}/model/model.cc
-        ${SRC_DIR}/model/model.h)
+target_link_libraries(Model Agents Config)
 
-target_link_libraries(Model ModelUtil AgentsHandler AgentsBuilder)
-
-add_library(Controller STATIC
-        ${SRC_DIR}/controller/controller.cc
-        ${SRC_DIR}/controller/controller.h)
+add_library(Controller
+        ${SRC_DIR}/controller/controller.h
+        ${SRC_DIR}/controller/controller.cc)
 
 target_link_libraries(Controller Model)
-
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -65,8 +61,6 @@ add_library(Worker
         ${SRC_DIR}/concurrency/worker.cc
         ${SRC_DIR}/concurrency/worker.h)
 
-target_link_libraries(Worker)
-
 set(PROJECT_SOURCES
         ${SRC_DIR}/main.cc
         ${SRC_DIR}/view/monitoringview.cc
@@ -80,15 +74,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
     )
 else()
-    if(ANDROID)
-        add_library(MonitoringSystem SHARED
-            ${PROJECT_SOURCES}
-        )
-    else()
-        add_executable(MonitoringSystem
-            ${PROJECT_SOURCES}
-        )
-    endif()
+    add_executable(MonitoringSystem ${PROJECT_SOURCES})
 endif()
 
 target_link_libraries(MonitoringSystem PRIVATE
@@ -98,21 +84,12 @@ target_link_libraries(MonitoringSystem PRIVATE
                        Controller
                        Qt${QT_VERSION_MAJOR}::Widgets)
 
-set_target_properties(MonitoringSystem PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(MonitoringSystem)
 endif()
 
-add_compile_definitions("_LOG_PATH=${CMAKE_SOURCE_DIR}/${LOG_PATH}")
-add_compile_definitions("_CONFIG_PATH=${CMAKE_SOURCE_DIR}/${CONFIG_PATH}")
-add_compile_definitions("_CORELIB_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_PATH}")
-add_compile_definitions("_CORELIB_CPU_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_CPU_PATH}")
-add_compile_definitions("_CORELIB_MEMORY_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_MEMORY_PATH}")
-add_compile_definitions("_CORELIB_NETWORK_PATH=${CMAKE_SOURCE_DIR}/${CORELIB_NETWORK_PATH}")
+add_compile_definitions("LOG_PATH=${CMAKE_SOURCE_DIR}/log/metrics.logs"
+        "AGENTS_PATH=${CMAKE_SOURCE_DIR}/src/agents/core/build"
+        "CONFIG_PATH=${CMAKE_SOURCE_DIR}/config/agents.conf"
+        "LOGGING_DELAY=1000"
+        "AGENTS_DELAY=3000")

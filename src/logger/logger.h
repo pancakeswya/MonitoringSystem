@@ -1,7 +1,7 @@
-#ifndef MONITORINGSYSTEM_SRC_BASE_LOGGER_H_
-#define MONITORINGSYSTEM_SRC_BASE_LOGGER_H_
+#ifndef MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
+#define MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
 
-#include "base/paths.h"
+#include <string_view>
 
 #include <fstream>
 #include <string>
@@ -15,13 +15,13 @@ class Logger {
  public:
   static constexpr char endlog = '\n';
 
-  static Logger& Log() {
-    static Logger logger;
+  static Logger& Log(const std::string& path) {
+    static Logger logger(path);
     logger.ofs_ << '[' << GetCurrentTime() << "] ";
     return logger;
   }
 
-  template<typename Tp, typename = std::enable_if_t<std::is_arithmetic_v<Tp>, bool>>
+  template<typename Tp, typename = std::enable_if_t<std::is_arithmetic_v<Tp>>>
   friend Logger& operator<<(Logger& logger, Tp val) {
     logger.ofs_ << ": " << val << ' ';
     return logger;
@@ -40,8 +40,8 @@ class Logger {
  private:
   std::ofstream ofs_;
 
-  Logger() {
-    ofs_.open(paths::kLogsFile, std::fstream::app);
+  explicit Logger(const std::string& path) {
+    ofs_.open(path, std::fstream::app);
   }
 
   ~Logger() {
@@ -59,4 +59,4 @@ class Logger {
 
 } // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_BASE_LOGGER_H_
+#endif // MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
