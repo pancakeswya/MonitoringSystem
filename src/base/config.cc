@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <string>
-#include <iostream>
 #include <unordered_map>
 
 namespace monsys::config {
