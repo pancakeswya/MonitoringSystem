@@ -160,71 +160,43 @@ Model::ErrorMap Model::UpdateMetrics() {
     return errors;
   }
   std::vector calls = {
-      /*----------------|--------METRIC_REF---------|-------------------ERROR_REF-------------------|-------------MAX_ACCEPTED_RANGE-----------|-----------METRIC_COLLECT_TIMEOUT----------|--------METRIC_COLLECT_FN----------|---------OPTIONAL_PARAMS_IN_COLLECT_FN-------|*/
+      MakeMetricCallback(metrics_.cpu_load, errors.at(agents::CpuLoadFn::kName),
+                         config_.cpu.load.range, 1, cpu_agent_.cpu_load,
+                         config_.cpu.load.timeout),
       MakeMetricCallback(
-          metrics_.cpu_load, /*-------|*/ errors.at(agents::CpuLoadFn::kName),
-          /*-------|*/ config_.cpu.load.range, /*---------------|*/ 1,
-          /*-------------------------------------|*/ cpu_agent_.cpu_load,
-          /*-----------|*/ config_.cpu.load.timeout /*-----------------|*/),
+          metrics_.cpu_processes, errors.at(agents::CpuProcessesFn::kName),
+          config_.cpu.processes.range, config_.cpu.processes.timeout,
+          cpu_agent_.cpu_processes),
       MakeMetricCallback(
-          metrics_.cpu_processes,
-          /*--|*/ errors.at(agents::CpuProcessesFn::kName),
-          /*--|*/ config_.cpu.processes.range,
-          /*----------|*/ config_.cpu.processes.timeout,
-          /*---------|*/
-          cpu_agent_
-              .cpu_processes /*-------|---------------------------------------------|*/),
+          metrics_.ram_total, errors.at(agents::RamTotalFn::kName),
+          config_.memory.ram_total.range, config_.memory.ram_total.timeout,
+          memory_agent_.ram_total),
+      MakeMetricCallback(metrics_.ram, errors.at(agents::RamFn::kName),
+                         config_.memory.ram.range, config_.memory.ram.timeout,
+                         memory_agent_.ram),
+      MakeMetricCallback(metrics_.hard_ops, errors.at(agents::HardOpsFn::kName),
+                         config_.memory.hard_ops.range,
+                         config_.memory.hard_ops.timeout,
+                         memory_agent_.hard_ops),
       MakeMetricCallback(
-          metrics_.ram_total, /*------|*/ errors.at(agents::RamTotalFn::kName),
-          /*------|*/ config_.memory.ram_total.range,
-          /*-------|*/ config_.memory.ram_total.timeout,
-          /*------|*/
-          memory_agent_
-              .ram_total /*--------|---------------------------------------------|*/),
+          metrics_.hard_volume, errors.at(agents::HardVolumeFn::kName),
+          config_.memory.hard_volume.range, config_.memory.hard_volume.timeout,
+          memory_agent_.hard_volume),
+      MakeMetricCallback(metrics_.hard_throughput,
+                         errors.at(agents::HardThroughputFn::kName),
+                         config_.memory.hard_throughput.range,
+                         config_.memory.hard_throughput.timeout,
+                         memory_agent_.hard_throughput),
       MakeMetricCallback(
-          metrics_.ram, /*------------|*/ errors.at(agents::RamFn::kName),
-          /*-----------|*/ config_.memory.ram.range,
-          /*-------------|*/ config_.memory.ram.timeout,
-          /*------------|*/
-          memory_agent_
-              .ram /*--------------|---------------------------------------------|*/),
-      MakeMetricCallback(
-          metrics_.hard_ops, /*-------|*/ errors.at(agents::HardOpsFn::kName),
-          /*-------|*/ config_.memory.hard_ops.range,
-          /*--------|*/ config_.memory.hard_ops.timeout,
-          /*-------|*/
-          memory_agent_
-              .hard_ops /*---------|---------------------------------------------|*/),
-      MakeMetricCallback(
-          metrics_.hard_volume,
-          /*----|*/ errors.at(agents::HardVolumeFn::kName),
-          /*----|*/ config_.memory.hard_volume.range,
-          /*-----|*/ config_.memory.hard_volume.timeout,
-          /*----|*/
-          memory_agent_
-              .hard_volume /*------|---------------------------------------------|*/),
-      MakeMetricCallback(
-          metrics_.hard_throughput,
-          /*|*/ errors.at(agents::HardThroughputFn::kName),
-          /*|*/ config_.memory.hard_throughput.range,
-          /*-|*/ config_.memory.hard_throughput.timeout,
-          /*|*/
-          memory_agent_
-              .hard_throughput /*--|---------------------------------------------|*/),
-      MakeMetricCallback(
-          metrics_.url_available,
-          /*--|*/ errors.at(agents::UrlAvailableFn::kName),
-          /*--|*/ config_.network.url_available.range,
-          /*--|*/ config_.network.url_available.timeout,
-          /*-|*/ network_agent_.url_available,
-          /*--|*/ config_.network.url_available.url.c_str() /*|*/),
-      MakeMetricCallback(
-          metrics_.inet_throughput,
-          /*|*/ errors.at(agents::InetThroughputFn::kName),
-          /*|*/ config_.network.inet_throughout.range, /*|*/ 1,
-          /*-------------------------------------|*/
-          network_agent_.inet_throughput,
-          /*|*/ config_.network.inet_throughout.timeout /*--|*/)};
+          metrics_.url_available, errors.at(agents::UrlAvailableFn::kName),
+          config_.network.url_available.range,
+          config_.network.url_available.timeout, network_agent_.url_available,
+          config_.network.url_available.url.c_str()),
+      MakeMetricCallback(metrics_.inet_throughput,
+                         errors.at(agents::InetThroughputFn::kName),
+                         config_.network.inet_throughout.range, 1,
+                         network_agent_.inet_throughput,
+                         config_.network.inet_throughout.timeout)};
   std::vector<std::thread> threads(calls.begin(), calls.end());
   for (std::thread& thread : threads) {
     thread.join();

@@ -30,7 +30,7 @@ RM := rm -rf
 
 MAKEFLAGS += --no-print-directory
 
-all: build run
+all: install run
 
 agent_cpu agent_memory agent_network:
 	mkdir -p $(AGENTSCORELIB_DIR)
