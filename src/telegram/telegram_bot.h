@@ -15,6 +15,6 @@ class TelegramBot {
   std::string url_;
 };
 
-} // namespace monsys
+}  // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_TOOLS_TELEGRAM_BOT_H_
+#endif  // MONITORINGSYSTEM_SRC_TOOLS_TELEGRAM_BOT_H_

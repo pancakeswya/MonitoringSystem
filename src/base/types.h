@@ -54,6 +54,6 @@ struct Config {
   NetworkConfig network;
 };
 
-} // namespace monsys
+}  // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_BASE_TYPES_H_
+#endif  // MONITORINGSYSTEM_SRC_BASE_TYPES_H_

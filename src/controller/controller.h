@@ -1,11 +1,11 @@
 #ifndef MONITORINGSYSTEM_SRC_CONTROLLER_CONTROLLER_H_
 #define MONITORINGSYSTEM_SRC_CONTROLLER_CONTROLLER_H_
 
-#include "base/types.h"
-
-#include <string>
 #include <functional>
+#include <string>
 #include <unordered_map>
+
+#include "base/types.h"
 
 namespace monsys {
 
@@ -19,22 +19,23 @@ class Controller {
   explicit Controller(Model* model);
 
   void LogMetrics();
-  bool LoadConfig();
-  LoadAgentsMap LoadAgents() noexcept;
+  void LoadConfig();
+  void SaveConfig();
+  void LoadAgents() noexcept;
 
   void SetConfig(const Config& config);
+
   Config GetConfig();
+  Metrics CollectMetrics();
 
   void OnError(ErrorPredicate err_pred) noexcept;
 
-  Metrics CollectMetrics();
  private:
   void HandleError(const std::string& err_str);
   Model* model_;
   ErrorPredicate err_pred_;
 };
 
+}  // namespace monsys
 
-} // namespace monsys
-
-#endif // MONITORINGSYSTEM_SRC_CONTROLLER_CONTROLLER_H_
+#endif  // MONITORINGSYSTEM_SRC_CONTROLLER_CONTROLLER_H_

@@ -13,11 +13,12 @@ class Worker {
   Worker();
   ~Worker();
 
-  template<typename F, typename... Args>
+  template <typename F, typename... Args>
   void SetWork(F&& f, Args... args);
   void SetTimeout(unsigned int timeout) noexcept;
 
   void Start();
+
  private:
   void DoWork();
 
@@ -26,11 +27,11 @@ class Worker {
   Work work_;
 };
 
-template<typename F, typename... Args>
+template <typename F, typename... Args>
 inline void Worker::SetWork(F&& f, Args... args) {
   work_ = std::bind(f, args...);
 }
 
-} // monsys
+}  // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_CONCURRENCY_WORKER_H_
+#endif  // MONITORINGSYSTEM_SRC_CONCURRENCY_WORKER_H_

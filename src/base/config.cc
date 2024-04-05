@@ -8,26 +8,30 @@ namespace monsys::config {
 
 namespace {
 
-using MetricMap = std::unordered_map<std::string, std::unordered_map<std::string, MetricConfig>>;
-using MetricRefMap = std::unordered_map<std::string, std::unordered_map<std::string, MetricConfig*>>;
+using MetricMap =
+    std::unordered_map<std::string,
+                       std::unordered_map<std::string, MetricConfig>>;
+using MetricRefMap =
+    std::unordered_map<std::string,
+                       std::unordered_map<std::string, MetricConfig*>>;
 
 size_t SkipSpace(const std::string& str) noexcept {
   size_t i = 0;
-  for(;std::isspace(str[i]); ++i)
+  for (; std::isspace(str[i]); ++i)
     ;
   return i;
 }
 
 size_t SkipAlpha(const std::string& str) noexcept {
   size_t i = 0;
-  for(;std::isalpha(str[i]); ++i)
+  for (; std::isalpha(str[i]); ++i)
     ;
   return i;
 }
 
 size_t LastAlpha(const std::string& str) noexcept {
   size_t i = str.size() - 1;
-  for(;!std::isalpha(str[i]); --i)
+  for (; !std::isalpha(str[i]); --i)
     ;
   return i + 1;
 }
@@ -35,7 +39,7 @@ size_t LastAlpha(const std::string& str) noexcept {
 MetricMap ParseMetricFields(std::ifstream& input, std::string& url) {
   MetricMap metric_map;
   std::string line, last_name, last_type;
-  while(std::getline(input, line)) {
+  while (std::getline(input, line)) {
     size_t i = SkipAlpha(line);
     std::string field_name = line.substr(0, i++);
     i += SkipSpace(&line[i]);
@@ -55,8 +59,8 @@ MetricMap ParseMetricFields(std::ifstream& input, std::string& url) {
       continue;
     }
     if (field_name == "range") {
-      auto&[min, max] = metric_map[last_type][last_name].range;
-      while(i < line.size()) {
+      auto& [min, max] = metric_map[last_type][last_name].range;
+      while (i < line.size()) {
         size_t parsed_size = 1;
         if (line[i] == '>') {
           if (line[i + 1] == '=') {
@@ -88,34 +92,31 @@ MetricMap ParseMetricFields(std::ifstream& input, std::string& url) {
 }
 
 MetricRefMap MetricRefMapFromConfig(Config& config) {
-  return {
-      {"cpu_agent", {
-          {"cpu", &config.cpu.load},
-          {"processes", &config.cpu.processes},
-      }},
-      {"memory_agent", {
-          {"ram", &config.memory.ram},
-          {"ram_total", &config.memory.ram_total},
-          {"hard_volume", &config.memory.hard_volume},
-          {"hard_ops", &config.memory.hard_ops},
-          {"hard_throughput", &config.memory.hard_throughput}
-      }},
-      {"network_agent", {
-          {"url_available", &config.network.url_available},
-          {"inet_throughput", &config.network.inet_throughout}
-      }}
-
-  };
+  return {{"cpu_agent",
+           {
+               {"cpu", &config.cpu.load},
+               {"processes", &config.cpu.processes},
+           }},
+          {"memory_agent",
+           {{"ram", &config.memory.ram},
+            {"ram_total", &config.memory.ram_total},
+            {"hard_volume", &config.memory.hard_volume},
+            {"hard_ops", &config.memory.hard_ops},
+            {"hard_throughput", &config.memory.hard_throughput}}},
+          {"network_agent",
+           {{"url_available", &config.network.url_available},
+            {"inet_throughput", &config.network.inet_throughout}}}};
 }
 
-std::pair<bool, Config> ConfigFromMetricMap(const MetricMap& metric_map, const std::string& url) {
+std::pair<bool, Config> ConfigFromMetricMap(const MetricMap& metric_map,
+                                            const std::string& url) {
   Config config = {};
   MetricRefMap res_map = MetricRefMapFromConfig(config);
-  for(auto&[type, named_metric] : res_map) {
-    for(auto&[name, metric] : named_metric) {
+  for (auto& [type, named_metric] : res_map) {
+    for (auto& [name, metric] : named_metric) {
       try {
         *res_map[type][name] = metric_map.at(type).at(name);
-      } catch(...) {
+      } catch (...) {
         return {false, {}};
       }
     }
@@ -124,7 +125,7 @@ std::pair<bool, Config> ConfigFromMetricMap(const MetricMap& metric_map, const s
   return {true, config};
 }
 
-} // namespace
+}  // namespace
 
 std::pair<bool, Config> Read(const std::string& path) {
   std::ifstream input(path.data(), std::ifstream::binary);
@@ -142,13 +143,13 @@ bool Write(Config& config, const std::string& path) {
     return false;
   }
   MetricRefMap metric_ref_map = MetricRefMapFromConfig(config);
-  for(auto&[type, named_metric] : metric_ref_map) {
-    for(auto&[name, metric] : named_metric) {
+  for (auto& [type, named_metric] : metric_ref_map) {
+    for (auto& [name, metric] : named_metric) {
       ofs << "name: " << name << '\n';
       if (!type.empty()) {
         ofs << "type: " << type << '\n';
       }
-      auto[min, max] = metric->range;
+      auto [min, max] = metric->range;
       ofs << "range: > " << min << ", < " << max << '\n';
       ofs << "timeout: " << metric->timeout << "\n\n";
     }
@@ -157,4 +158,4 @@ bool Write(Config& config, const std::string& path) {
   return true;
 }
 
-} // namespace config
+}  // namespace monsys::config

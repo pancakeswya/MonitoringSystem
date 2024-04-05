@@ -8,6 +8,6 @@ namespace monsys::config {
 std::pair<bool, Config> Read(const std::string& path);
 bool Write(Config& config, const std::string& path);
 
-} // namespace conf
+}  // namespace monsys::config
 
-#endif // MONITORINGSYSTEM_SRC_BASE_CONFIG_H_
+#endif  // MONITORINGSYSTEM_SRC_BASE_CONFIG_H_

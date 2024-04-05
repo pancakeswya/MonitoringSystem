@@ -19,12 +19,7 @@ typedef enum CoreError {
 } CoreError;
 
 __attribute__((unused)) static const char* kCoreErrorsStr[] = {
-    "success",
-    "allocation fail",
-    "cannot open proc file",
-    "proc file read failed",
-    "curl not initialized"
-};
+    "success", "allocation fail", "cannot open proc file",
+    "proc file read failed", "curl not initialized"};
 
-#endif // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_DEFS_H_
-
+#endif  // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_DEFS_H_

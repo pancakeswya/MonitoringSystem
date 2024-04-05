@@ -17,7 +17,7 @@ Error Dll::LastError() noexcept {
   return Error(err);
 }
 
-void* Dll::Symbol(const std::string &func_name) const noexcept {
+void* Dll::Symbol(const std::string& func_name) const noexcept {
   return dlsym(handle_, func_name.data());
 }
 
@@ -27,4 +27,4 @@ Dll::~Dll() {
   }
 }
 
-} // namespace monsys
+}  // namespace monsys

@@ -1,9 +1,9 @@
 #ifndef MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_CPU_H_
 #define MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_CPU_H_
 
-#include "defs.h"
-
 #include <stddef.h>
+
+#include "defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,4 +14,4 @@ extern CoreError CpuProcesses(size_t* processes);
 }
 #endif
 
-#endif // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_CPU_H_
+#endif  // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_CPU_H_

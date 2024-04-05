@@ -12,4 +12,4 @@ extern CoreError InetThroughput(double* inet_throughput, unsigned int delay);
 }
 #endif
 
-#endif // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_NETWORK_H_
+#endif  // MONITORINGSYSTEM_SRC_AGENTS_CORE_INCLUDE_NETWORK_H_

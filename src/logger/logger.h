@@ -1,13 +1,12 @@
 #ifndef MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
 #define MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
 
-#include <string_view>
-
-#include <fstream>
-#include <string>
-#include <iomanip>
 #include <ctime>
+#include <fstream>
+#include <iomanip>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace monsys {
 
@@ -26,7 +25,7 @@ class Logger {
     return logger;
   }
 
-  template<typename Tp, typename = std::enable_if_t<std::is_arithmetic_v<Tp>>>
+  template <typename Tp, typename = std::enable_if_t<std::is_arithmetic_v<Tp>>>
   friend Logger& operator<<(Logger& logger, Tp val) {
     logger.ofs_ << ": " << val << ' ';
     return logger;
@@ -38,8 +37,8 @@ class Logger {
   }
 
   friend void operator<<(Logger& logger, EndLog) {
-     logger.ofs_ << "|" << EndLog::end;
-     logger.ofs_.close();
+    logger.ofs_ << "|" << EndLog::end;
+    logger.ofs_.close();
   }
 
  private:
@@ -60,6 +59,6 @@ class Logger {
   }
 };
 
-} // namespace monsys
+}  // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_
+#endif  // MONITORINGSYSTEM_SRC_LOGGER_LOGGER_H_

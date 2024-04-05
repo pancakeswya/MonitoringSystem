@@ -1,15 +1,15 @@
 #ifndef MONITORINGSYSTEM_SRC_MODEL_MODEL_H_
 #define MONITORINGSYSTEM_SRC_MODEL_MODEL_H_
 
-#include "agents/dll.h"
-#include "agents/agents.h"
-#include "base/error.h"
-#include "base/types.h"
-
 #include <atomic>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
+
+#include "agents/agents.h"
+#include "agents/dll.h"
+#include "base/error.h"
+#include "base/types.h"
 
 namespace monsys {
 
@@ -19,6 +19,8 @@ class Model {
 
   void LogMetrics();
   Error LoadConfig();
+  Error SaveConfig();
+
   ErrorMap LoadAgents();
 
   void SetConfig(const Config& config);
@@ -28,6 +30,7 @@ class Model {
   Metrics GetMetrics();
 
   void Reset() noexcept;
+
  private:
   Error BuildCpuAgent(const std::string& dll_path) noexcept;
   Error BuildMemoryAgent(const std::string& dll_path) noexcept;
@@ -55,6 +58,6 @@ inline void Model::Reset() noexcept {
   network_agent_ = {};
 }
 
-} // namespace monsys
+}  // namespace monsys
 
-#endif // MONITORINGSYSTEM_SRC_MODEL_MODEL_H_
+#endif  // MONITORINGSYSTEM_SRC_MODEL_MODEL_H_
